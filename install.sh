@@ -54,7 +54,44 @@ for agent_src in "$REPO_DIR/claude/agents/"*.md; do
     ok "Installed agent: $agent_name"
 done
 
-# ── 4. Install trimout (output compressor for AI agent context windows) ──────
+# ── 4. Symlink agent memory directories into repo ────────────────────────────
+# Agent memories accumulate learnings over time; keeping them in the repo
+# means they sync across machines via git.
+echo ""
+info "Linking agent memory directories..."
+mkdir -p "$CLAUDE_DIR/agent-memory"
+
+for mem_src in "$REPO_DIR/claude/agent-memory/"*/; do
+    agent_name=$(basename "$mem_src")
+    mem_dst="$CLAUDE_DIR/agent-memory/$agent_name"
+    if [ -L "$mem_dst" ]; then
+        ok "Agent memory $agent_name already linked — skipping"
+    elif [ -d "$mem_dst" ]; then
+        # Merge any existing files into repo dir, then symlink
+        cp -n "$mem_dst"/* "$mem_src" 2>/dev/null || true
+        rm -rf "$mem_dst"
+        ln -s "$mem_src" "$mem_dst"
+        ok "Merged and linked agent memory: $agent_name"
+    else
+        ln -s "$mem_src" "$mem_dst"
+        ok "Linked agent memory: $agent_name"
+    fi
+done
+
+# ── 5. Symlink /sync skill ────────────────────────────────────────────────────
+echo ""
+mkdir -p "$HOME/.claude/skills"
+SYNC_SRC="$REPO_DIR/claude/skills/sync.md"
+SYNC_DST="$HOME/.claude/skills/sync.md"
+if [ -L "$SYNC_DST" ]; then
+    ok "/sync skill already linked — skipping"
+else
+    [ -f "$SYNC_DST" ] && mv "$SYNC_DST" "$SYNC_DST.bak.$TIMESTAMP"
+    ln -s "$SYNC_SRC" "$SYNC_DST"
+    ok "Linked /sync skill"
+fi
+
+# ── 6. Install trimout (output compressor for AI agent context windows) ──────
 echo ""
 if command -v trimout &>/dev/null; then
     info "trimout already installed — skipping"

@@ -22,6 +22,16 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd ~/projects/privat/ai-config && git status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /sync to save your learnings.\"}' || true"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
