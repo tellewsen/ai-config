@@ -54,7 +54,18 @@ for agent_src in "$REPO_DIR/claude/agents/"*.md; do
     ok "Installed agent: $agent_name"
 done
 
-# ── 4. Copy settings.template.json if settings.json is absent ────────────────
+# ── 4. Install trimout (output compressor for AI agent context windows) ──────
+echo ""
+if command -v trimout &>/dev/null; then
+    info "trimout already installed — skipping"
+elif command -v go &>/dev/null; then
+    info "Installing trimout..."
+    go install github.com/ristaloff/trimout@latest 2>/dev/null && ok "Installed trimout" || warn "trimout install failed — install manually: go install github.com/ristaloff/trimout@latest"
+else
+    warn "Go not found — skipping trimout install (install Go then: go install github.com/ristaloff/trimout@latest)"
+fi
+
+# ── 6. Copy settings.template.json if settings.json is absent ────────────────
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -66,7 +77,7 @@ else
     info "settings.json already exists — not overwriting (manage plugins via Claude Code)"
 fi
 
-# ── 5. Set up project memory for this repo ───────────────────────────────────
+# ── 7. Set up project memory for this repo ───────────────────────────────────
 # Claude Code encodes paths as the absolute path with / replaced by -
 echo ""
 ENCODED_PATH=$(echo "$REPO_DIR" | sed 's|/|-|g')
@@ -84,7 +95,7 @@ else
     info "Memory file already exists — not overwriting"
 fi
 
-# ── 6. Done ───────────────────────────────────────────────────────────────────
+# ── 8. Done ───────────────────────────────────────────────────────────────────
 echo ""
 ok "Installation complete."
 echo ""
