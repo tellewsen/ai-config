@@ -81,12 +81,34 @@ if (-not (Test-Path $SettingsTarget)) {
     Write-Info "settings.json already exists — not overwriting"
 }
 
-# ── 5. Done ───────────────────────────────────────────────────────────────────
+# ── 5. Set up project memory for this repo ───────────────────────────────────
+# Claude Code encodes paths: replace path separators with -
+Write-Host ""
+$EncodedPath = $RepoDir -replace '[/\\]', '-'
+# Ensure it starts with - (for absolute paths on Windows starting with drive letter)
+if (-not $EncodedPath.StartsWith('-')) { $EncodedPath = "-$EncodedPath" }
+$MemoryDir  = Join-Path $ClaudeDir "projects\$EncodedPath\memory"
+$MemoryFile = Join-Path $MemoryDir 'MEMORY.md'
+
+New-Item -ItemType Directory -Force -Path $MemoryDir | Out-Null
+
+if (-not (Test-Path $MemoryFile)) {
+    $content = Get-Content (Join-Path $RepoDir 'memory\MEMORY.template.md') -Raw
+    $content = $content -replace '\$HOME', $env:USERPROFILE
+    $content = $content -replace '\$REPO_DIR', $RepoDir
+    Set-Content -Path $MemoryFile -Value $content -Encoding UTF8
+    Write-Ok "Created memory at $MemoryFile"
+} else {
+    Write-Info "Memory file already exists — not overwriting"
+}
+
+# ── 6. Done ───────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Ok "Installation complete."
 Write-Host ""
 Write-Host "  CLAUDE.md: $ClaudeMdTarget"
 Write-Host "  Agents:    $AgentsDir"
+Write-Host "  Memory:    $MemoryFile"
 Write-Host ""
 Write-Host "  To use Copilot instructions in a project:"
 Write-Host "    Copy $RepoDir\copilot\copilot-instructions.md to <project>\.github\copilot-instructions.md"

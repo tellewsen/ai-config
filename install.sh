@@ -66,17 +66,33 @@ else
     info "settings.json already exists — not overwriting (manage plugins via Claude Code)"
 fi
 
-# ── 5. Done ───────────────────────────────────────────────────────────────────
+# ── 5. Set up project memory for this repo ───────────────────────────────────
+# Claude Code encodes paths as the absolute path with / replaced by -
+echo ""
+ENCODED_PATH=$(echo "$REPO_DIR" | sed 's|/|-|g')
+MEMORY_DIR="$CLAUDE_DIR/projects/$ENCODED_PATH/memory"
+MEMORY_FILE="$MEMORY_DIR/MEMORY.md"
+
+mkdir -p "$MEMORY_DIR"
+
+if [ ! -f "$MEMORY_FILE" ]; then
+    # Expand $HOME placeholder and $REPO_DIR placeholder in template
+    sed -e "s|\\\$HOME|$HOME|g" -e "s|\\\$REPO_DIR|$REPO_DIR|g" \
+        "$REPO_DIR/memory/MEMORY.template.md" > "$MEMORY_FILE"
+    ok "Created memory at $MEMORY_FILE"
+else
+    info "Memory file already exists — not overwriting"
+fi
+
+# ── 6. Done ───────────────────────────────────────────────────────────────────
 echo ""
 ok "Installation complete."
 echo ""
 echo "  Symlinked: $CLAUDE_DIR/CLAUDE.md → $REPO_DIR/claude/CLAUDE.md"
 echo "  Agents installed in: $CLAUDE_DIR/agents/"
+echo "  Memory: $MEMORY_FILE"
 echo ""
 echo "  To use Copilot instructions in a project:"
 echo "    cp $REPO_DIR/copilot/copilot-instructions.md <project>/.github/copilot-instructions.md"
-echo ""
-echo "  Memory template (for new machines):"
-echo "    $REPO_DIR/memory/MEMORY.template.md"
 echo ""
 echo "  To update agents after repo changes: re-run this script."

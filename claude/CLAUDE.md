@@ -46,6 +46,24 @@
 
 When a project CLAUDE.md exists, its rules take precedence over these globals for that project.
 
+## Knowledge Workflow
+
+The ai-config repo (`~/projects/privat/ai-config`) is the source of truth for global knowledge. When something worth preserving is discovered during a session:
+
+- **New universal preference or convention** → update `claude/CLAUDE.md` in the repo
+- **New or improved agent** → update `claude/agents/<name>.md`, then re-run `install.sh`
+- **New Copilot convention** → update `copilot/copilot-instructions.md`
+
+After updating, commit and push to keep all machines in sync:
+```bash
+cd ~/projects/privat/ai-config
+git add -A
+git commit -m "chore: update knowledge — <what changed>"
+git push
+```
+
+Do this proactively when something clearly belongs in the global knowledge base. On other machines: `git pull` then re-run `install.sh`.
+
 ## What Belongs Here vs Project CLAUDE.md
 
 | This file | Project CLAUDE.md |
