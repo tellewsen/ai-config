@@ -2,7 +2,7 @@
 
 ## Identity & Stack
 
-- Developer working primarily in TypeScript/Next.js, Go, Kotlin, Rust
+- Developer working primarily in JavaScript (primary), TypeScript, CSS, Go, Kotlin, Rust
 - Primary environments: WSL2 (Linux) and Windows native
 - Package managers: npm (JS), go modules, cargo, gradle (Kotlin)
 - Hosting: Vercel free tier, GitHub Actions for CI
@@ -13,6 +13,7 @@
 - Lead with the answer or action, not the reasoning
 - Code-first when the answer is code
 - Use plain prose, no emojis unless explicitly asked
+- When asked to brainstorm or "ask me questions", respond conversationally — not with structured tool calls or formal prompts. Match the energy and intent.
 
 ## Git Workflow
 
@@ -20,7 +21,8 @@
 - Verify SSH agent is running before any git push: `ssh-add -l`
 - Stage specific files by name — not `git add -A` or `git add .` (avoids accidentally committing .env or secrets)
 - Never skip hooks (`--no-verify`) unless explicitly asked
-- Conventional commit style: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`
+- Conventional commit style: `type(scope): description` with a body when the change warrants it
+- Never drop commit message bodies when rewriting or amending
 - Never force push to main/master without explicit confirmation
 
 ## Code Style
@@ -30,13 +32,25 @@
 - SQL: explicit column lists in SELECT — never `SELECT *`
 - Comments explain *why*, not *what* — the code shows what
 
+## Debugging
+
+- Before changing code, identify the root cause by reading related files first
+- For CSS bugs: check for specificity conflicts from broad parent selectors (e.g. `.field input` accidentally targeting radio buttons) before touching HTML
+- Explain the diagnosis before editing — do not replace working code with a new approach without understanding why the original failed
+
 ## Security Defaults
 
-- Never hardcode secrets, API keys, or credentials
+- **Never print secrets, API keys, service keys, or credentials in chat output** — not even partially
+- Never hardcode secrets or credentials in code
 - Use environment variables for all config — never commit `.env` files
+- Do not use `NEXT_PUBLIC_` prefix for env vars unless the project explicitly uses that convention
 - Validate and sanitize all external inputs
 - Parameterized queries only — no string interpolation into SQL
-- Never print secrets or tokens in chat output
+- Before any DELETE or DROP query: show what rows/tables would be affected and get confirmation
+
+## Claude Skills Format
+
+Custom skills use the subdirectory format: `~/.claude/skills/<skill-name>/SKILL.md` — never a flat `.md` file.
 
 ## Scope Guide
 
