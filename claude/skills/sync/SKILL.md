@@ -1,3 +1,8 @@
+---
+name: sync
+description: Commit and push pending changes in the ai-config knowledge repo to keep all machines in sync
+---
+
 Commit and push any pending changes in the ai-config knowledge repo.
 
 1. Run `git -C ~/projects/privat/ai-config status --short` and show the user what files have changed.

@@ -78,18 +78,20 @@ for mem_src in "$REPO_DIR/claude/agent-memory/"*/; do
     fi
 done
 
-# ── 5. Symlink /sync skill ────────────────────────────────────────────────────
+# ── 5. Symlink custom skills ──────────────────────────────────────────────────
 echo ""
 mkdir -p "$HOME/.claude/skills"
-SYNC_SRC="$REPO_DIR/claude/skills/sync.md"
-SYNC_DST="$HOME/.claude/skills/sync.md"
-if [ -L "$SYNC_DST" ]; then
-    ok "/sync skill already linked — skipping"
-else
-    [ -f "$SYNC_DST" ] && mv "$SYNC_DST" "$SYNC_DST.bak.$TIMESTAMP"
-    ln -s "$SYNC_SRC" "$SYNC_DST"
-    ok "Linked /sync skill"
-fi
+for skill_src in "$REPO_DIR/claude/skills/"*/; do
+    skill_name=$(basename "$skill_src")
+    skill_dst="$HOME/.claude/skills/$skill_name"
+    if [ -L "$skill_dst" ]; then
+        ok "Skill /$skill_name already linked — skipping"
+    else
+        [ -d "$skill_dst" ] && mv "$skill_dst" "$skill_dst.bak.$TIMESTAMP"
+        ln -s "$skill_src" "$skill_dst"
+        ok "Linked skill: /$skill_name"
+    fi
+done
 
 # ── 6. Install trimout (output compressor for AI agent context windows) ──────
 echo ""
