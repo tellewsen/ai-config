@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd ~/projects/privat/ai-config && git pull --ff-only && bash install.sh >/dev/null 2>&1 || true",
+            "command": "ssh-add -l >/dev/null 2>&1 && (cd ~/projects/privat/ai-config && git pull --ff-only && bash install.sh >/dev/null 2>&1) || echo '[SessionStart] No SSH agent — skipping ai-config sync'",
             "async": true
           }
         ]
