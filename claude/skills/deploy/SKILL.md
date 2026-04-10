@@ -5,16 +5,18 @@ description: Run a pre-deployment safety checklist before pushing to Vercel prod
 
 Run the full pre-deployment checklist before pushing anything to production.
 
-1. **Secret scan**: grep staged files and recent chat context for patterns matching API key, secret, token, password, service_key. Abort and report if anything is found.
+1. **Commit check**: run `git status` and `git log origin/main..HEAD`. All changes must be committed and pushed before deployment. If there are uncommitted changes or unpushed commits, stop — commit and push first, then re-run this checklist.
 
-2. **Env var audit**: diff all `.env*` files against `.env.example` (if it exists). List any vars that appear in multiple files with conflicting values. Flag any `NEXT_PUBLIC_` vars that aren't explicitly required by the project.
+2. **Secret scan**: grep staged files and recent chat context for patterns matching API key, secret, token, password, service_key. Abort and report if anything is found.
 
-3. **Destructive query check**: review any pending DB migrations or queries. Flag any DELETE, DROP, or TRUNCATE without a WHERE clause — show what rows would be affected and require explicit confirmation before continuing.
+3. **Env var audit**: diff all `.env*` files against `.env.example` (if it exists). List any vars that appear in multiple files with conflicting values. Flag any `NEXT_PUBLIC_` vars that aren't explicitly required by the project.
 
-4. **Tests**: run `npm test` (or the project's test command from CLAUDE.md). If tests fail, stop and report — do not deploy.
+4. **Destructive query check**: review any pending DB migrations or queries. Flag any DELETE, DROP, or TRUNCATE without a WHERE clause — show what rows would be affected and require explicit confirmation before continuing.
 
-5. **Git status**: confirm the working tree is clean and no sensitive files (`.env`, `*.key`, `*.pem`) are staged.
+5. **Tests**: run `npm test` (or the project's test command from CLAUDE.md). If tests fail, stop and report — do not deploy.
 
-6. **Summary**: present a pass/fail for each check. Only proceed to deploy if all pass. If anything fails, stop and ask for confirmation.
+6. **Git status**: confirm the working tree is clean and no sensitive files (`.env`, `*.key`, `*.pem`) are staged.
 
-7. **Deploy**: run `vercel --prod` and confirm the deployment URL is live.
+7. **Summary**: present a pass/fail for each check. Only proceed to deploy if all pass. If anything fails, stop and ask for confirmation.
+
+8. **Deploy**: run `vercel --prod` and confirm the deployment URL is live.

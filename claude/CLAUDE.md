@@ -25,6 +25,18 @@
 - Never drop commit message bodies when rewriting or amending
 - Never force push to main/master without explicit confirmation
 
+## Deployment
+
+- Always commit and push all code changes BEFORE suggesting deployment or redeployment (Vercel, CI, production)
+- Never tell the user to trigger a deploy until the latest commit is pushed: run `git log origin/main..HEAD` to confirm nothing is unpushed
+- If there are unpushed commits, push them first — then suggest deploying
+
+## Feature Flags
+
+- Feature flags must default to OFF (opt-in: disabled by default, env var enables the feature)
+- Never implement opt-out logic (enabled by default, env var disables) unless the project spec explicitly requires it
+- When adding a feature flag, confirm the gating direction before writing code: opt-in or opt-out?
+
 ## Code Style
 
 - TypeScript: strict mode, no `any`, explicit return types on exported functions
