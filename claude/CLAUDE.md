@@ -44,6 +44,22 @@
 - SQL: explicit column lists in SELECT — never `SELECT *`
 - Comments explain *why*, not *what* — the code shows what
 
+## Rust
+
+- Run `cargo check` after edits to catch type errors before moving on
+- Run `cargo test` before committing
+- Run `cargo fmt` to auto-format before reviewing diffs
+
+## Data Analysis
+
+- Before drawing conclusions from any report, dataset, or query result: state the date range and record count of the data you're analyzing
+- If records are missing, stale, or have gaps in coverage, surface that before proceeding — not after
+
+## MCP / Tools
+
+- When a tool or MCP server shows a connection or reconnect error, first verify it actually fails by attempting a real call before diagnosing
+- A reconnect message in logs does not confirm the tool is broken — test it
+
 ## Debugging
 
 - Before changing code, identify the root cause by reading related files first

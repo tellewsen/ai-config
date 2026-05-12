@@ -20,6 +20,16 @@
             "command": "trimout metrics"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -f Cargo.toml && cargo fmt --quiet 2>/dev/null; true",
+            "async": true
+          }
+        ]
       }
     ],
     "Stop": [
