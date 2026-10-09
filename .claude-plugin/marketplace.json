@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "core",
-      "description": "Specialist agents, ship/deploy/sync skills, and a cargo fmt hook.",
+      "description": "Specialist agents, ship/deploy/sync skills, and a rustfmt hook.",
       "source": "./plugins/core",
       "category": "development"
     },

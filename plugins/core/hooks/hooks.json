@@ -1,14 +1,14 @@
 {
-  "description": "Runs cargo fmt after edits in Rust projects.",
+  "description": "Runs rustfmt on each Rust file Claude edits, using the edition from the nearest Cargo.toml.",
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "test -f Cargo.toml && cargo fmt --quiet 2>/dev/null; true",
-            "async": true
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/rustfmt-edited.sh\"",
+            "timeout": 30
           }
         ]
       }
