@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 # install.ps1 - Windows native installer for ai-config
-# Symlinks CLAUDE.md and installs the core plugin (agents, skills, hooks) from this
-# repo's marketplace. Also migrates machines set up before the plugin existed.
+# Links the shared instruction files, installs the core plugin (agents, skills, hooks)
+# from this repo's marketplace, and sets the settings it manages. Also migrates machines set up before the plugin existed.
 # Symlinks need Developer Mode (Settings > For Developers) or an Administrator shell.
 # Safe to re-run.
 
@@ -18,30 +18,38 @@ function Write-Warn  { param($msg) Write-Host "[warn] $msg" -ForegroundColor Yel
 
 New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
 
-# -- 1. Symlink CLAUDE.md -----------------------------------------------------
-$ClaudeMdTarget = Join-Path $ClaudeDir 'CLAUDE.md'
-$ClaudeMdSrc    = Join-Path $RepoDir 'claude\CLAUDE.md'
-
-$existing  = Get-Item $ClaudeMdTarget -ErrorAction SilentlyContinue
-$isSymlink = $existing -and $existing.LinkType -eq 'SymbolicLink'
-
-if ($isSymlink) {
-    Write-Ok "CLAUDE.md already symlinked - skipping"
-} else {
-    if ($existing) {
-        $backup = "$ClaudeMdTarget.bak.$Timestamp"
-        Write-Warn "Backing up existing CLAUDE.md -> $backup"
-        Move-Item $ClaudeMdTarget $backup
+# -- 1. Link instruction files ------------------------------------------------
+# Links (not copies) so edits and pulls take effect immediately; copies are the
+# fallback when symlinks aren't allowed.
+function Link-File($src, $dst) {
+    $label = $dst.Replace($env:USERPROFILE, '~')
+    $item = Get-Item $dst -Force -ErrorAction SilentlyContinue
+    if ($item -and $item.LinkType -eq 'SymbolicLink' -and @($item.Target)[0] -eq $src) {
+        Write-Ok "$label already linked - skipping"
+        return
+    }
+    if ($item) {
+        Write-Warn "Backing up existing $label -> $(Split-Path -Leaf $dst).bak.$Timestamp"
+        Move-Item $dst "$dst.bak.$Timestamp"
     }
     try {
-        New-Item -ItemType SymbolicLink -Path $ClaudeMdTarget -Target $ClaudeMdSrc | Out-Null
-        Write-Ok "Linked CLAUDE.md"
+        New-Item -ItemType SymbolicLink -Path $dst -Target $src | Out-Null
+        Write-Ok "Linked $label"
     } catch {
-        Write-Warn "Symlink failed (need Developer Mode or Admin). Copying instead."
-        Copy-Item $ClaudeMdSrc $ClaudeMdTarget
-        Write-Ok "Copied CLAUDE.md (not symlinked - edits won't auto-sync)"
+        Copy-Item $src $dst
+        Write-Warn "Copied $label - symlinks need Developer Mode or Admin; re-run after pulling to refresh it"
     }
 }
+
+Link-File (Join-Path $RepoDir 'claude\CLAUDE.md') (Join-Path $ClaudeDir 'CLAUDE.md')
+# CLAUDE.md imports the shared rules from @~/.claude/AGENTS.md.
+$SharedAgents = Join-Path $RepoDir 'shared\AGENTS.md'
+Link-File $SharedAgents (Join-Path $ClaudeDir 'AGENTS.md')
+# Other tools read the same file from their own home, when they are installed.
+$CopilotDir = Join-Path $env:USERPROFILE '.copilot'
+$CodexDir   = Join-Path $env:USERPROFILE '.codex'
+if (Test-Path $CopilotDir) { Link-File $SharedAgents (Join-Path $CopilotDir 'copilot-instructions.md') }
+if (Test-Path $CodexDir)   { Link-File $SharedAgents (Join-Path $CodexDir 'AGENTS.md') }
 
 # -- 2. Migrate from the pre-plugin layout ------------------------------------
 # Agents used to be copied into ~/.claude/agents. Left in place they would
@@ -78,36 +86,75 @@ foreach ($name in 'code-reviewer', 'security-auditor') {
     }
 }
 
-# -- 3. Copy settings.template.json if settings.json is absent ----------------
-Write-Host ""
-$SettingsTarget = Join-Path $ClaudeDir 'settings.json'
-$SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
-
-if (-not (Test-Path $SettingsTarget)) {
-    Copy-Item $SettingsSrc $SettingsTarget
-    Write-Ok "Copied settings.template.json -> settings.json"
-} else {
-    Write-Info "settings.json already exists - not overwriting"
-    Write-Info "  Make sure it enables core@ai-config and sets autoUpdate on the ai-config marketplace (see claude\settings.template.json)"
-}
-
-# -- 4. Install the core plugin -----------------------------------------------
+# -- 3. Install the core plugin -----------------------------------------------
+# Before the settings step: `claude plugin` rewrites settings.json and drops keys it
+# does not manage, such as the marketplace autoUpdate flag.
 Write-Host ""
 if (Get-Command claude -ErrorAction SilentlyContinue) {
     # PowerShell 5.1 turns redirected native stderr into errors, which Stop would make
     # fatal even when claude succeeds; judge by exit code instead.
     $ErrorActionPreference = 'Continue'
-    & claude plugin marketplace add tellewsen/ai-config *> $null
-    & claude plugin install core@ai-config *> $null
-    $installed = ($LASTEXITCODE -eq 0)
+    $already = (& claude plugin list 2>$null | Out-String) -match 'core@ai-config'
+    if (-not $already) {
+        & claude plugin marketplace add tellewsen/ai-config *> $null
+        & claude plugin install core@ai-config *> $null
+        $installed = ($LASTEXITCODE -eq 0)
+    }
     $ErrorActionPreference = 'Stop'
-    if ($installed) {
+    if ($already) {
+        Write-Ok "Plugin core@ai-config already installed - skipping"
+    } elseif ($installed) {
         Write-Ok "Installed plugin core@ai-config"
     } else {
         Write-Warn "Plugin install failed - run: claude plugin install core@ai-config"
     }
 } else {
     Write-Warn "claude not found - after installing Claude Code run: claude plugin install core@ai-config"
+}
+
+# -- 4. Settings --------------------------------------------------------------
+# Copied from the template on a new machine. On every run, set what this repo
+# manages: AI_CONFIG_DIR (the path skills and hooks use), the core plugin, and
+# marketplace auto-update. Hooks are left alone here; they need bash anyway.
+Write-Host ""
+$SettingsTarget = Join-Path $ClaudeDir 'settings.json'
+$SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
+
+function Set-Prop($obj, $name, $value) {
+    if ($obj.PSObject.Properties[$name]) { $obj.$name = $value }
+    else { $obj | Add-Member -NotePropertyName $name -NotePropertyValue $value }
+}
+function Get-OrAdd($obj, $name) {
+    if (-not $obj.PSObject.Properties[$name]) { Set-Prop $obj $name ([pscustomobject]@{}) }
+    return $obj.$name
+}
+
+$fresh = -not (Test-Path $SettingsTarget)
+if ($fresh) {
+    Copy-Item $SettingsSrc $SettingsTarget
+    Write-Ok "Copied settings.template.json -> settings.json"
+}
+$raw = Get-Content $SettingsTarget -Raw -Encoding UTF8
+$s = $raw | ConvertFrom-Json
+$before = $s | ConvertTo-Json -Depth 32 -Compress
+
+Set-Prop (Get-OrAdd $s 'env') 'AI_CONFIG_DIR' $RepoDir
+$plugins = Get-OrAdd $s 'enabledPlugins'
+if (-not $plugins.PSObject.Properties['core@ai-config']) { Set-Prop $plugins 'core@ai-config' $true }
+$markets = Get-OrAdd $s 'extraKnownMarketplaces'
+if (-not $markets.PSObject.Properties['ai-config']) {
+    Set-Prop $markets 'ai-config' ([pscustomobject]@{ source = [pscustomobject]@{ source = 'github'; repo = 'tellewsen/ai-config' } })
+}
+Set-Prop $markets.'ai-config' 'autoUpdate' $true
+
+if (($s | ConvertTo-Json -Depth 32 -Compress) -eq $before) {
+    Write-Info "settings.json already up to date"
+} else {
+    if (-not $fresh) { Set-Content -Path "$SettingsTarget.bak.$Timestamp" -Value $raw -NoNewline -Encoding UTF8 }
+    # UTF-8 without BOM: Windows PowerShell's -Encoding UTF8 writes a BOM.
+    [IO.File]::WriteAllText($SettingsTarget, ($s | ConvertTo-Json -Depth 32), (New-Object Text.UTF8Encoding $false))
+    if ($fresh) { Write-Ok "Set AI_CONFIG_DIR in settings.json" }
+    else { Write-Ok "Updated settings.json (backup: settings.json.bak.$Timestamp)" }
 }
 
 # -- 5. Set up project memory for this repo -----------------------------------
@@ -134,9 +181,6 @@ if (-not (Test-Path $MemoryFile)) {
 Write-Host ""
 Write-Ok "Installation complete."
 Write-Host ""
-Write-Host "  CLAUDE.md: $ClaudeMdTarget"
+Write-Host "  Linked:    ~\.claude\CLAUDE.md, ~\.claude\AGENTS.md (+ Copilot CLI / Codex when installed)"
 Write-Host "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
 Write-Host "  Memory:    $MemoryFile"
-Write-Host ""
-Write-Host "  To use Copilot instructions in a project:"
-Write-Host "    Copy $RepoDir\copilot\copilot-instructions.md to <project>\.github\copilot-instructions.md"

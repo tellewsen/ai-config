@@ -1,16 +1,16 @@
 # ai-config
 
-Personal AI tooling knowledge base — global Claude Code instructions, a Claude Code plugin marketplace (agents, skills, hooks), and GitHub Copilot templates. Clone it, run the installer, and every machine gets the same setup.
+Personal AI tooling knowledge base — global instructions shared by Claude Code, Copilot CLI and Codex, and a Claude Code plugin marketplace (agents, skills, hooks). Clone it, run the installer, and every machine gets the same setup.
 
 ## What's included
 
 | Path | What it does |
 |---|---|
-| `claude/CLAUDE.md` | Global Claude Code instructions (auto-loaded in every session) |
+| `shared/AGENTS.md` | Global instructions for every AI tool: stack, style, git, security |
+| `claude/CLAUDE.md` | Claude Code-only additions; imports `AGENTS.md` (`@~/.claude/AGENTS.md`) |
 | `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `cargo fmt` hook |
 | `claude/settings.template.json` | Settings template: enabled plugins, marketplace auto-update, ai-config sync hooks (copied on first install) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
-| `copilot/copilot-instructions.md` | GitHub Copilot instructions template for projects |
 | `memory/MEMORY.template.md` | Scaffold for Claude Code project memory |
 
 ## Plugins
@@ -59,10 +59,10 @@ Verify:
 
 ```bash
 # Linux
-ls -la ~/.claude/CLAUDE.md       # should be a symlink
+ls -la ~/.claude/CLAUDE.md ~/.claude/AGENTS.md   # should be symlinks
 
 # Windows PowerShell
-dir $env:USERPROFILE\.claude\CLAUDE.md
+dir $env:USERPROFILE\.claude\CLAUDE.md, $env:USERPROFILE\.claude\AGENTS.md
 
 # Both
 claude plugin list               # should list core@ai-config
@@ -72,16 +72,21 @@ Open Claude Code in any directory — global CLAUDE.md is now active.
 
 The installer also migrates machines set up before the plugin existed: it removes the old copies in `~/.claude/agents/` and skill links in `~/.claude/skills/`, moves agent memories to `~/.claude/agent-memory/core-<name>/`, and (on Linux) drops the hooks the plugin replaced from `settings.json`, keeping a backup.
 
-## Using Copilot instructions
+## Other AI tools
 
-`gh copilot` CLI has no global config, so Copilot instructions are per-repository:
+The installer links `shared/AGENTS.md` into every tool it finds:
 
-```bash
-mkdir -p <project>/.github
-cp ~/projects/privat/ai-config/copilot/copilot-instructions.md <project>/.github/copilot-instructions.md
-```
+| Tool | Global instructions file | Linked when |
+|---|---|---|
+| Claude Code | `~/.claude/AGENTS.md`, imported by `~/.claude/CLAUDE.md` | always |
+| GitHub Copilot CLI | `~/.copilot/copilot-instructions.md` | `~/.copilot` exists |
+| OpenAI Codex | `~/.codex/AGENTS.md` | `~/.codex` exists |
 
-For VS Code Copilot, these are picked up automatically from `.github/copilot-instructions.md`.
+Install a tool first, then re-run the installer. For tools without a global file, copy `shared/AGENTS.md` into the project as `AGENTS.md`.
+
+## Where the repo lives
+
+Clone it anywhere. The installer stores the path in `settings.json` as `env.AI_CONFIG_DIR`, and `/core:sync` and the sync hooks use that.
 
 ## Setting up memory on a new machine
 
@@ -97,14 +102,14 @@ mkdir -p ~/.claude/projects/-home-ae-projects-privat-myapp/memory/
 2. Copy and fill in the template:
 
 ```bash
-cp ~/projects/privat/ai-config/memory/MEMORY.template.md \
+cp "$AI_CONFIG_DIR"/memory/MEMORY.template.md \
    ~/.claude/projects/-home-ae-projects-privat-myapp/memory/MEMORY.md
 # Then edit MEMORY.md to add project-specific context
 ```
 
 ## Updating
 
-Nothing to re-run. `CLAUDE.md` is a symlink, and a SessionStart hook pulls the repo when an SSH agent is available. Agents, skills and hooks arrive through plugin auto-update; to update right away, run `/plugin marketplace update ai-config`.
+Nothing to re-run. `CLAUDE.md` and `AGENTS.md` are symlinks, and a SessionStart hook pulls the repo when an SSH agent is available. Agents, skills and hooks arrive through plugin auto-update; to update right away, run `/plugin marketplace update ai-config`.
 
 ## Adding an agent or skill
 

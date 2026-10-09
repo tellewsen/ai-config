@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — Linux/WSL2 installer for ai-config
-# Symlinks CLAUDE.md and installs the core plugin (agents, skills, hooks) from this
-# repo's marketplace. Also migrates machines set up before the plugin existed.
+# Links the shared instruction files, installs the core plugin (agents, skills, hooks)
+# from this repo's marketplace, and keeps the settings it manages in step. Also migrates machines set up before the plugin existed.
 # Safe to re-run.
 
 set -euo pipefail
@@ -22,21 +22,28 @@ warn()   { echo -e "${YELLOW}[warn]${NC} $*"; }
 
 mkdir -p "$CLAUDE_DIR"
 
-# ── 1. Symlink CLAUDE.md ─────────────────────────────────────────────────────
-CLAUDE_MD_TARGET="$CLAUDE_DIR/CLAUDE.md"
-CLAUDE_MD_SRC="$REPO_DIR/claude/CLAUDE.md"
+# ── 1. Link instruction files ────────────────────────────────────────────────
+# Links (not copies) so edits and pulls take effect immediately.
+link_file() {  # src, dst
+    local src=$1 dst=$2 label=${2/#$HOME/\~}
+    if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
+        ok "$label already linked — skipping"
+        return
+    fi
+    if [ -e "$dst" ] || [ -L "$dst" ]; then
+        warn "Backing up existing $label → $(basename "$dst").bak.$TIMESTAMP"
+        mv "$dst" "$dst.bak.$TIMESTAMP"
+    fi
+    ln -s "$src" "$dst"
+    ok "Linked $label"
+}
 
-if [ -L "$CLAUDE_MD_TARGET" ]; then
-    ok "CLAUDE.md already symlinked — skipping"
-elif [ -f "$CLAUDE_MD_TARGET" ]; then
-    warn "Backing up existing CLAUDE.md → CLAUDE.md.bak.$TIMESTAMP"
-    mv "$CLAUDE_MD_TARGET" "$CLAUDE_MD_TARGET.bak.$TIMESTAMP"
-    ln -s "$CLAUDE_MD_SRC" "$CLAUDE_MD_TARGET"
-    ok "Linked CLAUDE.md"
-else
-    ln -s "$CLAUDE_MD_SRC" "$CLAUDE_MD_TARGET"
-    ok "Linked CLAUDE.md"
-fi
+link_file "$REPO_DIR/claude/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+# CLAUDE.md imports the shared rules from @~/.claude/AGENTS.md.
+link_file "$REPO_DIR/shared/AGENTS.md" "$CLAUDE_DIR/AGENTS.md"
+# Other tools read the same file from their own home, when they are installed.
+if [ -d "$HOME/.copilot" ]; then link_file "$REPO_DIR/shared/AGENTS.md" "$HOME/.copilot/copilot-instructions.md"; fi
+if [ -d "$HOME/.codex" ]; then link_file "$REPO_DIR/shared/AGENTS.md" "$HOME/.codex/AGENTS.md"; fi
 
 # ── 2. Migrate from the pre-plugin layout ────────────────────────────────────
 # Agents and skills used to be copied/linked into ~/.claude. Left in place they
@@ -106,7 +113,10 @@ else
     warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
 fi
 
-# ── 4. Copy settings.template.json if settings.json is absent ────────────────
+# ── 4. Settings ──────────────────────────────────────────────────────────────
+# The template is the source of truth for the settings this repo manages: the
+# AI_CONFIG_DIR env var, the ai-config sync hooks, the core plugin and marketplace
+# auto-update. Everything else in settings.json is left alone.
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -114,51 +124,60 @@ SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
 if [ ! -f "$SETTINGS_TARGET" ]; then
     cp "$SETTINGS_SRC" "$SETTINGS_TARGET"
     ok "Copied settings.template.json → settings.json"
-elif command -v python3 &>/dev/null; then
-    # Existing settings predate the plugin: drop hooks it replaced, enable it, and
-    # turn on marketplace auto-update so later changes arrive without this script.
+    FRESH_SETTINGS=1
+fi
+if command -v python3 &>/dev/null; then
     cp "$SETTINGS_TARGET" "$SETTINGS_TARGET.bak.$TIMESTAMP"
-    result=$(python3 - "$SETTINGS_TARGET" "$SETTINGS_TARGET.bak.$TIMESTAMP" <<'EOF'
-import json, os, sys
-path, backup = sys.argv[1], sys.argv[2]
+    result=$(python3 - "$SETTINGS_TARGET" "$SETTINGS_SRC" "$REPO_DIR" <<'EOF'
+import json, sys
+path, template_path, repo_dir = sys.argv[1:4]
 s = json.load(open(path))
+template = json.load(open(template_path))
 before = json.dumps(s, sort_keys=True)
-hooks = s.get("hooks", {})
+
+# Hooks this repo manages, past and present: the old hardcoded-path sync hooks,
+# trimout, and cargo fmt (now in the plugin).
+def managed(cmd):
+    return any(k in cmd for k in ("AI_CONFIG_DIR", "privat/ai-config", "trimout", "cargo fmt"))
+
+hooks = s.setdefault("hooks", {})
 for event in list(hooks):
     groups = []
     for g in hooks[event]:
-        g["hooks"] = [h for h in g.get("hooks", [])
-                      if "trimout" not in h.get("command", "")
-                      and "cargo fmt" not in h.get("command", "")]
-        for h in g["hooks"]:
-            c = h.get("command", "")
-            h["command"] = c.replace(" && bash install.sh >/dev/null 2>&1", "").replace("run /sync", "run /core:sync")
+        g["hooks"] = [h for h in g.get("hooks", []) if not managed(h.get("command", ""))]
         if g["hooks"]:
             groups.append(g)
-    if groups:
-        hooks[event] = groups
-    else:
-        del hooks[event]
+    hooks[event] = groups
+for event, groups in template.get("hooks", {}).items():
+    hooks.setdefault(event, []).extend(groups)
+for event in [e for e, groups in hooks.items() if not groups]:
+    del hooks[event]
+if not hooks:
+    del s["hooks"]
+
+s.setdefault("env", {})["AI_CONFIG_DIR"] = repo_dir
 s.setdefault("enabledPlugins", {}).setdefault("core@ai-config", True)
 mkt = s.setdefault("extraKnownMarketplaces", {}).setdefault(
     "ai-config", {"source": {"source": "github", "repo": "tellewsen/ai-config"}})
 mkt["autoUpdate"] = True
+
 if json.dumps(s, sort_keys=True) == before:
-    os.remove(backup)
     print("unchanged")
 else:
-    json.dump(s, open(path, "w"), indent=2, ensure_ascii=False)
-    open(path, "a").write("\n")
+    with open(path, "w") as f:
+        json.dump(s, f, indent=2, ensure_ascii=False)
+        f.write("\n")
     print("updated")
 EOF
 )
-    if [ "$result" = updated ]; then
-        ok "Migrated settings.json (backup: settings.json.bak.$TIMESTAMP)"
+    if [ "$result" = updated ] && [ -z "${FRESH_SETTINGS:-}" ]; then
+        ok "Updated settings.json (backup: settings.json.bak.$TIMESTAMP)"
     else
-        info "settings.json already up to date"
+        rm "$SETTINGS_TARGET.bak.$TIMESTAMP"
+        [ "$result" = updated ] || info "settings.json already up to date"
     fi
 else
-    warn "python3 not found — enable core@ai-config and set autoUpdate on the ai-config marketplace in settings.json by hand"
+    warn "python3 not found — in settings.json set env.AI_CONFIG_DIR to $REPO_DIR, enable core@ai-config, and set autoUpdate on the ai-config marketplace"
 fi
 
 # ── 5. Set up project memory for this repo ───────────────────────────────────
@@ -184,9 +203,6 @@ fi
 echo ""
 ok "Installation complete."
 echo ""
-echo "  Symlinked: $CLAUDE_DIR/CLAUDE.md → $REPO_DIR/claude/CLAUDE.md"
+echo "  Linked:    ~/.claude/CLAUDE.md, ~/.claude/AGENTS.md (+ Copilot CLI / Codex when installed)"
 echo "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
 echo "  Memory:    $MEMORY_FILE"
-echo ""
-echo "  To use Copilot instructions in a project:"
-echo "    cp $REPO_DIR/copilot/copilot-instructions.md <project>/.github/copilot-instructions.md"

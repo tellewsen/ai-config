@@ -66,6 +66,11 @@ try {
         $s = Get-Content (Join-Path $c.Claude 'settings.json') -Raw | ConvertFrom-Json
         $s.enabledPlugins.'core@ai-config' -eq $true -and $s.extraKnownMarketplaces.'ai-config'.autoUpdate -eq $true
     }
+    Check 'fresh: AGENTS.md installed' { (Get-Content (Join-Path $c.Claude 'AGENTS.md') -Raw) -match 'Global Agent Instructions' }
+    Check 'fresh: AI_CONFIG_DIR points at the repo' {
+        (Get-Content (Join-Path $c.Claude 'settings.json') -Raw | ConvertFrom-Json).env.AI_CONFIG_DIR -eq $c.Repo
+    }
+    Check 'fresh: no backup of a settings file we just created' { -not (Test-Path (Join-Path $c.Claude 'settings.json.bak.*')) }
     Check 'fresh: plugin installed' { (Get-Content (Join-Path $c.Home 'claude-calls')) -match 'plugin install core@ai-config' }
     Check 'fresh: project memory created' { @(Get-ChildItem (Join-Path $c.Claude 'projects\*\memory\MEMORY.md')).Count -eq 1 }
 
@@ -76,7 +81,12 @@ try {
     New-Item -ItemType Directory -Force -Path $agents, (Join-Path $memory 'debugger') | Out-Null
     foreach ($n in 'debugger', 'code-reviewer', 'security-auditor', 'my-own') { Set-Content (Join-Path $agents "$n.md") 'old' }
     Set-Content (Join-Path $memory 'debugger\MEMORY.md') '# debugger notes'
-    Set-Content (Join-Path $c.Claude 'settings.json') '{"theme": "dark"}'
+    # Written as UTF-8 without BOM, like Claude Code does, with a non-ASCII character
+    # that a wrong read encoding would garble.
+    [IO.File]::WriteAllText((Join-Path $c.Claude 'settings.json'), '{"theme": "dark", "note": "caf' + [char]0xE9 + '"}', (New-Object Text.UTF8Encoding $false))
+    $copilot = Join-Path $c.Home '.copilot'
+    New-Item -ItemType Directory -Force -Path $copilot | Out-Null
+    Set-Content (Join-Path $copilot 'copilot-instructions.md') 'old copilot rules'
 
     Check 'legacy: install succeeds' { Invoke-Install $c }
     Check 'legacy: old agent copy removed' { -not (Test-Path (Join-Path $agents 'debugger.md')) }
@@ -85,9 +95,26 @@ try {
     }
     Check "legacy: user's own agent kept" { Test-Path (Join-Path $agents 'my-own.md') }
     Check 'legacy: memory moved to core-<name>' { (Get-Content (Join-Path $memory 'core-debugger\MEMORY.md')) -match 'debugger notes' }
-    Check 'legacy: existing settings left alone' { (Get-Content (Join-Path $c.Claude 'settings.json') -Raw) -match '"theme": "dark"' }
+    $settingsPath = Join-Path $c.Claude 'settings.json'
+    Check 'legacy: unrelated settings kept' {
+        $s = [IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json
+        $s.theme -eq 'dark' -and $s.note -eq ('caf' + [char]0xE9)
+    }
+    Check 'legacy: settings enable core with autoUpdate and AI_CONFIG_DIR' {
+        $s = [IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json
+        $s.enabledPlugins.'core@ai-config' -eq $true -and $s.extraKnownMarketplaces.'ai-config'.autoUpdate -eq $true -and $s.env.AI_CONFIG_DIR -eq $c.Repo
+    }
+    Check 'legacy: settings written without BOM' { [IO.File]::ReadAllBytes($settingsPath)[0] -eq [byte][char]'{' }
+    Check 'legacy: settings backup written' { @(Get-ChildItem "$settingsPath.bak.*").Count -eq 1 }
+    Check 'legacy: Copilot CLI instructions replaced by AGENTS.md' {
+        (Get-Content (Join-Path $copilot 'copilot-instructions.md') -Raw) -match 'Global Agent Instructions'
+    }
+    Check 'legacy: old Copilot instructions backed up' { @(Get-ChildItem (Join-Path $copilot 'copilot-instructions.md.bak.*')).Count -eq 1 }
+    $settingsBefore = [IO.File]::ReadAllText($settingsPath)
 
     Check 'rerun: install succeeds' { Invoke-Install $c }
+    Check 'rerun: settings unchanged' { [IO.File]::ReadAllText($settingsPath) -eq $settingsBefore }
+    Check 'rerun: no new settings backup' { @(Get-ChildItem "$settingsPath.bak.*").Count -eq 1 }
     Check 'rerun: memory still in place' { Test-Path (Join-Path $memory 'core-debugger\MEMORY.md') }
 } finally {
     Remove-Item $Work -Recurse -Force -ErrorAction SilentlyContinue

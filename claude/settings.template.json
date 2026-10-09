@@ -1,11 +1,14 @@
 {
+  "env": {
+    "AI_CONFIG_DIR": "(set by install.sh / install.ps1)"
+  },
   "hooks": {
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "cd ~/projects/privat/ai-config && git status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}' || true"
+            "command": "[ -n \"$AI_CONFIG_DIR\" ] && git -C \"$AI_CONFIG_DIR\" status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}' || true"
           }
         ]
       }
@@ -15,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ssh-add -l >/dev/null 2>&1 && (cd ~/projects/privat/ai-config && git pull --ff-only --quiet) || echo '[SessionStart] No SSH agent — skipping ai-config sync'",
+            "command": "[ -n \"$AI_CONFIG_DIR\" ] || exit 0; if ssh-add -l >/dev/null 2>&1; then git -C \"$AI_CONFIG_DIR\" pull --ff-only --quiet; else echo '[SessionStart] No SSH agent — skipping ai-config sync'; fi",
             "async": true
           }
         ]
