@@ -72,7 +72,6 @@ try {
     }
     Check 'fresh: no backup of a settings file we just created' { -not (Test-Path (Join-Path $c.Claude 'settings.json.bak.*')) }
     Check 'fresh: plugin installed' { (Get-Content (Join-Path $c.Home 'claude-calls')) -match 'plugin install core@ai-config' }
-    Check 'fresh: project memory created' { @(Get-ChildItem (Join-Path $c.Claude 'projects\*\memory\MEMORY.md')).Count -eq 1 }
 
     # -- Machine set up before the plugin --------------------------------------
     $c = New-Case 'legacy'
@@ -83,7 +82,7 @@ try {
     Set-Content (Join-Path $memory 'debugger\MEMORY.md') '# debugger notes'
     # Written as UTF-8 without BOM, like Claude Code does, with a non-ASCII character
     # that a wrong read encoding would garble.
-    [IO.File]::WriteAllText((Join-Path $c.Claude 'settings.json'), '{"theme": "dark", "permissions": {"allow": ["Bash(make lint)"]}, "note": "caf' + [char]0xE9 + '"}', (New-Object Text.UTF8Encoding $false))
+    [IO.File]::WriteAllText((Join-Path $c.Claude 'settings.json'), '{"theme": "dark", "permissions": {"allow": ["Bash(make lint)"]}, "note": "caf' + [char]0xE9 + '", "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "[ -n \"$AI_CONFIG_DIR\" ] && echo sync"}, {"type": "command", "command": "notify-send done"}]}], "SessionStart": [{"hooks": [{"type": "command", "command": "git -C \"$AI_CONFIG_DIR\" pull"}]}]}}', (New-Object Text.UTF8Encoding $false))
     $copilot = Join-Path $c.Home '.copilot'
     New-Item -ItemType Directory -Force -Path $copilot | Out-Null
     Set-Content (Join-Path $copilot 'copilot-instructions.md') 'old copilot rules'
@@ -107,6 +106,10 @@ try {
     Check 'legacy: allowlist merged, own entries kept' {
         $allow = @(([IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json).permissions.allow)
         $allow[0] -eq 'Bash(make lint)' -and $allow -contains 'Bash(ssh-add -l)' -and $allow.Count -eq 6
+    }
+    Check 'legacy: old sync hooks removed, own hook kept' {
+        $s = [IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json
+        $s.hooks.Stop[0].hooks.Count -eq 1 -and $s.hooks.Stop[0].hooks[0].command -eq 'notify-send done' -and -not $s.hooks.PSObject.Properties['SessionStart']
     }
     Check 'legacy: settings written without BOM' { [IO.File]::ReadAllBytes($settingsPath)[0] -eq [byte][char]'{' }
     Check 'legacy: settings backup written' { @(Get-ChildItem "$settingsPath.bak.*").Count -eq 1 }

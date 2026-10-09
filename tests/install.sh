@@ -66,7 +66,6 @@ check "fresh: no backup of a settings file we just created" sh -c "! ls '$C'/set
 check "fresh: settings enable core" settings_has "$C/settings.json" 's["enabledPlugins"].get("core@ai-config") is True'
 check "fresh: marketplace keeps autoUpdate" settings_has "$C/settings.json" 's["extraKnownMarketplaces"]["ai-config"].get("autoUpdate") is True'
 check "fresh: plugin installed" grep -qx "plugin install core@ai-config" "$H/claude-calls"
-check "fresh: project memory created" sh -c "ls '$C'/projects/*/memory/MEMORY.md"
 
 # ── Machine set up before the plugin ──────────────────────────────────────────
 setup legacy
@@ -110,10 +109,9 @@ check "legacy: skill link removed" test ! -e "$C/skills/sync"
 check "legacy: unrelated skill kept" test -d "$C/skills/unrelated"
 check "legacy: trimout and cargo fmt hooks dropped" sh -c "! grep -q 'trimout\|cargo fmt' '$C/settings.json'"
 check "legacy: SessionStart no longer runs install.sh" sh -c "! grep -q 'install.sh' '$C/settings.json'"
-check "legacy: Stop hook points to /core:sync" grep -q "/core:sync" "$C/settings.json"
 check "legacy: no hardcoded repo path left" sh -c "! grep -q 'privat/ai-config' '$C/settings.json'"
 check "legacy: user's own hook kept" grep -q "notify-send done" "$C/settings.json"
-check "legacy: one managed hook per event" settings_has "$C/settings.json" "all(sum('AI_CONFIG_DIR' in h['command'] for g in s['hooks'][e] for h in g['hooks']) == 1 for e in ('Stop', 'SessionStart'))"
+check "legacy: sync hooks moved out of settings" settings_has "$C/settings.json" "'SessionStart' not in s['hooks'] and [h['command'] for h in s['hooks']['Stop'][0]['hooks']] == ['notify-send done']"
 check "legacy: AI_CONFIG_DIR points at the repo" settings_has "$C/settings.json" "s['env']['AI_CONFIG_DIR'] == '$R'"
 check "legacy: Copilot CLI instructions linked to AGENTS.md" test "$(readlink "$H/.copilot/copilot-instructions.md")" = "$R/shared/AGENTS.md"
 check "legacy: old Copilot instructions backed up" sh -c "grep -q 'old copilot rules' '$H'/.copilot/copilot-instructions.md.bak.*"

@@ -1,13 +1,37 @@
 {
-  "description": "Runs rustfmt on each Rust file Claude edits, using the edition from the nearest Cargo.toml.",
+  "description": "Runs rustfmt on each Rust file Claude edits, with the edition from the nearest Cargo.toml. When AI_CONFIG_DIR is set (by the ai-config installer), also pulls that repo at session start and reminds you to /core:sync uncommitted changes. Each command is valid in both bash and PowerShell, like the pause plugin's: bash runs the .sh script and exits before the PowerShell part, which PowerShell reads past a block comment. rustfmt has no PowerShell twin, so on Windows without Git Bash it does nothing.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo `# > $null <#` > /dev/null; \"${BASH:-bash}\" \"${CLAUDE_PLUGIN_ROOT}/scripts/ai-config.sh\" pull 2>/dev/null; exit 0; #> ; [Console]::In.ReadToEnd() | & (Get-Process -Id $PID).Path -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT/scripts/ai-config.ps1\" pull",
+            "async": true,
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo `# > $null <#` > /dev/null; \"${BASH:-bash}\" \"${CLAUDE_PLUGIN_ROOT}/scripts/ai-config.sh\" nag 2>/dev/null; exit 0; #> ; [Console]::In.ReadToEnd() | & (Get-Process -Id $PID).Path -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT/scripts/ai-config.ps1\" nag",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/rustfmt-edited.sh\"",
+            "command": "echo `# > $null <#` > /dev/null; \"${BASH:-bash}\" \"${CLAUDE_PLUGIN_ROOT}/scripts/rustfmt-edited.sh\" 2>/dev/null; exit 0; #> ; exit 0",
             "timeout": 30
           }
         ]

@@ -115,8 +115,9 @@ fi
 
 # ── 4. Settings ──────────────────────────────────────────────────────────────
 # The template is the source of truth for the settings this repo manages: the
-# AI_CONFIG_DIR env var, the permissions allowlist, the ai-config sync hooks, the
-# core plugin and marketplace auto-update. Everything else in settings.json is left alone.
+# AI_CONFIG_DIR env var, the permissions allowlist, the core plugin and marketplace
+# auto-update. The ai-config sync hooks now ship in the core plugin, so the copies older
+# installs put in settings.json are removed. Everything else in settings.json is left alone.
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -135,8 +136,8 @@ s = json.load(open(path))
 template = json.load(open(template_path))
 before = json.dumps(s, sort_keys=True)
 
-# Hooks this repo manages, past and present: the old hardcoded-path sync hooks,
-# trimout, and cargo fmt (now in the plugin).
+# Hooks this repo used to put in settings.json: the sync hooks (by AI_CONFIG_DIR or the
+# old hardcoded path), trimout, and cargo fmt. All of them now live in the core plugin.
 def managed(cmd):
     return any(k in cmd for k in ("AI_CONFIG_DIR", "privat/ai-config", "trimout", "cargo fmt"))
 
@@ -183,29 +184,27 @@ else
     warn "python3 not found — in settings.json set env.AI_CONFIG_DIR to $REPO_DIR, enable core@ai-config, and set autoUpdate on the ai-config marketplace"
 fi
 
-# ── 5. Set up project memory for this repo ───────────────────────────────────
-# Claude Code names the folder after the absolute path with every character that
-# isn't a letter or digit replaced by -
-echo ""
-ENCODED_PATH=$(printf '%s' "$REPO_DIR" | sed 's|[^a-zA-Z0-9]|-|g')
-MEMORY_DIR="$CLAUDE_DIR/projects/$ENCODED_PATH/memory"
-MEMORY_FILE="$MEMORY_DIR/MEMORY.md"
-
-mkdir -p "$MEMORY_DIR"
-
-if [ ! -f "$MEMORY_FILE" ]; then
-    # Expand $HOME placeholder and $REPO_DIR placeholder in template
-    sed -e "s|\\\$HOME|$HOME|g" -e "s|\\\$REPO_DIR|$REPO_DIR|g" \
-        "$REPO_DIR/memory/MEMORY.template.md" > "$MEMORY_FILE"
-    ok "Created memory at $MEMORY_FILE"
-else
-    info "Memory file already exists — not overwriting"
+# Plugins the template enables are only switched on for a fresh settings.json; on an
+# existing machine, list the ones it lacks rather than enabling them behind your back.
+# A plugin set to false here was turned off on purpose and isn't listed.
+if command -v python3 &>/dev/null; then
+    missing=$(python3 - "$SETTINGS_TARGET" "$SETTINGS_SRC" <<'EOF'
+import json, sys
+have = json.load(open(sys.argv[1])).get("enabledPlugins", {})
+for name in json.load(open(sys.argv[2])).get("enabledPlugins", {}):
+    if name not in have:
+        print(name)
+EOF
+)
+    if [ -n "$missing" ]; then
+        info "Plugins the template enables that this machine doesn't have (add with: claude plugin install <name>):"
+        printf '%s\n' "$missing" | sed 's/^/         /'
+    fi
 fi
 
-# ── 6. Done ───────────────────────────────────────────────────────────────────
+# ── 5. Done ───────────────────────────────────────────────────────────────────
 echo ""
 ok "Installation complete."
 echo ""
 echo "  Linked:    ~/.claude/CLAUDE.md, ~/.claude/AGENTS.md (+ Copilot CLI / Codex when installed)"
 echo "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
-echo "  Memory:    $MEMORY_FILE"

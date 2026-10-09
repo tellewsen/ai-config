@@ -11,29 +11,6 @@
       "Bash(claude plugin list)"
     ]
   },
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$AI_CONFIG_DIR\" ] || exit 0; s=$(git -C \"$AI_CONFIG_DIR\" status --porcelain 2>/dev/null); f=\"$(git -C \"$AI_CONFIG_DIR\" rev-parse --absolute-git-dir 2>/dev/null)/sync-nag\"; [ -n \"$s\" ] && [ \"$s\" != \"$(cat \"$f\" 2>/dev/null)\" ] || exit 0; printf '%s' \"$s\" > \"$f\"; echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}'"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$AI_CONFIG_DIR\" ] || exit 0; if ssh-add -l >/dev/null 2>&1; then git -C \"$AI_CONFIG_DIR\" pull --ff-only --quiet; else echo '[SessionStart] No SSH agent — skipping ai-config sync'; fi",
-            "async": true
-          }
-        ]
-      }
-    ]
-  },
   "enabledPlugins": {
     "core@ai-config": true,
     "pause@ai-config": true,

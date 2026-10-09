@@ -115,7 +115,9 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 # -- 4. Settings --------------------------------------------------------------
 # Copied from the template on a new machine. On every run, set what this repo
 # manages: AI_CONFIG_DIR (the path skills and hooks use), the permissions
-# allowlist, the core plugin, and marketplace auto-update. Hooks are left alone here; they need bash anyway.
+# allowlist, the core plugin, and marketplace auto-update. The ai-config sync hooks now
+# ship in the core plugin (and work without Git Bash), so the bash-only copies older
+# installs put in settings.json are removed.
 Write-Host ""
 $SettingsTarget = Join-Path $ClaudeDir 'settings.json'
 $SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
@@ -144,6 +146,18 @@ $permissions = Get-OrAdd $s 'permissions'
 $allow = @(if ($permissions.PSObject.Properties['allow']) { $permissions.allow })
 $templateAllow = @((Get-Content $SettingsSrc -Raw -Encoding UTF8 | ConvertFrom-Json).permissions.allow)
 Set-Prop $permissions 'allow' @($allow + @($templateAllow | Where-Object { $allow -notcontains $_ }))
+# Hooks this repo used to put in settings.json: the sync hooks (by AI_CONFIG_DIR or the
+# old hardcoded path), trimout, and cargo fmt. All of them now live in the core plugin.
+if ($s.PSObject.Properties['hooks']) {
+    foreach ($event in @($s.hooks.PSObject.Properties.Name)) {
+        $groups = @(foreach ($g in @($s.hooks.$event)) {
+            $kept = @(@($g.hooks) | Where-Object { $_.command -notmatch 'AI_CONFIG_DIR|privat/ai-config|trimout|cargo fmt' })
+            if ($kept.Count) { Set-Prop $g 'hooks' $kept; $g }
+        })
+        if ($groups.Count) { Set-Prop $s.hooks $event $groups } else { $s.hooks.PSObject.Properties.Remove($event) }
+    }
+    if (-not @($s.hooks.PSObject.Properties).Count) { $s.PSObject.Properties.Remove('hooks') }
+}
 $plugins = Get-OrAdd $s 'enabledPlugins'
 if (-not $plugins.PSObject.Properties['core@ai-config']) { Set-Prop $plugins 'core@ai-config' $true }
 $markets = Get-OrAdd $s 'extraKnownMarketplaces'
@@ -162,30 +176,19 @@ if (($s | ConvertTo-Json -Depth 32 -Compress) -eq $before) {
     else { Write-Ok "Updated settings.json (backup: settings.json.bak.$Timestamp)" }
 }
 
-# -- 5. Set up project memory for this repo -----------------------------------
-# Claude Code names the folder after the absolute path with every character that
-# isn't a letter or digit replaced by -, so C:\Users\me\ai-config is C--Users-me-ai-config
-Write-Host ""
-$EncodedPath = $RepoDir -replace '[^a-zA-Z0-9]', '-'
-$MemoryDir  = Join-Path $ClaudeDir "projects\$EncodedPath\memory"
-$MemoryFile = Join-Path $MemoryDir 'MEMORY.md'
-
-New-Item -ItemType Directory -Force -Path $MemoryDir | Out-Null
-
-if (-not (Test-Path $MemoryFile)) {
-    $content = Get-Content (Join-Path $RepoDir 'memory\MEMORY.template.md') -Raw
-    $content = $content -replace '\$HOME', $env:USERPROFILE
-    $content = $content -replace '\$REPO_DIR', $RepoDir
-    Set-Content -Path $MemoryFile -Value $content -Encoding UTF8
-    Write-Ok "Created memory at $MemoryFile"
-} else {
-    Write-Info "Memory file already exists - not overwriting"
+# Plugins the template enables are only switched on for a fresh settings.json; on an
+# existing machine, list the ones it lacks rather than enabling them behind your back.
+# A plugin set to false here was turned off on purpose and isn't listed.
+$templatePlugins = @((Get-Content $SettingsSrc -Raw -Encoding UTF8 | ConvertFrom-Json).enabledPlugins.PSObject.Properties.Name)
+$missing = @($templatePlugins | Where-Object { -not $plugins.PSObject.Properties[$_] })
+if ($missing.Count) {
+    Write-Info "Plugins the template enables that this machine doesn't have (add with: claude plugin install <name>):"
+    $missing | ForEach-Object { Write-Host "         $_" }
 }
 
-# -- 6. Done -------------------------------------------------------------------
+# -- 5. Done -------------------------------------------------------------------
 Write-Host ""
 Write-Ok "Installation complete."
 Write-Host ""
 Write-Host "  Linked:    ~\.claude\CLAUDE.md, ~\.claude\AGENTS.md (+ Copilot CLI / Codex when installed)"
 Write-Host "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
-Write-Host "  Memory:    $MemoryFile"

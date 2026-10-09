@@ -8,10 +8,9 @@ Personal AI tooling knowledge base — global instructions shared by Claude Code
 |---|---|
 | `shared/AGENTS.md` | Global instructions for every AI tool: stack, style, git, security |
 | `claude/CLAUDE.md` | Claude Code-only additions; imports `AGENTS.md` (`@~/.claude/AGENTS.md`) |
-| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `rustfmt` hook for edited Rust files |
-| `claude/settings.template.json` | Settings template: enabled plugins, marketplace auto-update, ai-config sync hooks (copied on first install) |
+| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, the ai-config sync hooks, and a `rustfmt` hook for edited Rust files |
+| `claude/settings.template.json` | Settings template: enabled plugins, permissions allowlist, marketplace auto-update (copied on first install; on existing machines the installer lists template plugins that aren't enabled) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
-| `memory/MEMORY.template.md` | Scaffold for Claude Code project memory |
 
 ## Plugins
 
@@ -24,7 +23,7 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 
 | Plugin | What it does |
 |---|---|
-| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a hook that runs `rustfmt` on each Rust file Claude edits. |
+| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a hook that runs `rustfmt` on each Rust file Claude edits. With `AI_CONFIG_DIR` set, it also pulls this repo at session start and reminds you to `/core:sync` uncommitted changes. |
 | `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
 
 Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).
@@ -70,7 +69,7 @@ claude plugin list               # should list core@ai-config
 
 Open Claude Code in any directory — global CLAUDE.md is now active.
 
-The installer also migrates machines set up before the plugin existed: it removes the old copies in `~/.claude/agents/` and skill links in `~/.claude/skills/`, moves agent memories to `~/.claude/agent-memory/core-<name>/`, and (on Linux) drops the hooks the plugin replaced from `settings.json`, keeping a backup.
+The installer also migrates machines set up before the plugin existed: it removes the old copies in `~/.claude/agents/` and skill links in `~/.claude/skills/`, moves agent memories to `~/.claude/agent-memory/core-<name>/`, and drops the hooks the plugin replaced from `settings.json`, keeping a backup.
 
 ## Other AI tools
 
@@ -88,28 +87,9 @@ Install a tool first, then re-run the installer. For tools without a global file
 
 Clone it anywhere. The installer stores the path in `settings.json` as `env.AI_CONFIG_DIR`, and `/core:sync` and the sync hooks use that.
 
-## Setting up memory on a new machine
-
-1. Find your project's path-encoded memory directory:
-
-```bash
-# The path is ~/.claude/projects/<encoded-path>/memory/
-# Encoded: replace / with - in your project path
-# e.g. /home/ae/projects/privat/myapp → -home-ae-projects-privat-myapp
-mkdir -p ~/.claude/projects/-home-ae-projects-privat-myapp/memory/
-```
-
-2. Copy and fill in the template:
-
-```bash
-cp "$AI_CONFIG_DIR"/memory/MEMORY.template.md \
-   ~/.claude/projects/-home-ae-projects-privat-myapp/memory/MEMORY.md
-# Then edit MEMORY.md to add project-specific context
-```
-
 ## Updating
 
-Nothing to re-run. `CLAUDE.md` and `AGENTS.md` are symlinks, and a SessionStart hook pulls the repo when an SSH agent is available. Agents, skills and hooks arrive through plugin auto-update; to update right away, run `/plugin marketplace update ai-config`.
+Nothing to re-run. `CLAUDE.md` and `AGENTS.md` are symlinks, and the core plugin's SessionStart hook pulls the repo (fast-forward only, never prompting for a passphrase). If the pull fails, for example because the branches diverged or no SSH key is loaded, Claude is told at the start of the session. Agents, skills and hooks arrive through plugin auto-update; to update right away, run `/plugin marketplace update ai-config`.
 
 ## Adding an agent or skill
 
@@ -127,6 +107,8 @@ CI (`.github/workflows/repo.yml`) validates the marketplace and plugins, shellch
 bash tests/install.sh
 powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1   # Windows
 ```
+
+Each plugin's hooks have their own tests and workflow (`plugins/core/tests/run.sh`, `plugins/pause/tests/run.sh`). They cover the bash scripts, their PowerShell twins, and the polyglot `hooks.json` commands on Linux, macOS and Windows: `bash plugins/core/tests/run.sh`.
 
 Eval suites for model behavior (they call the model, so they run locally, not in CI): `plugins/pause/evals` for the pause plugin, and `plugins/core/evals` for the global rules — staging by name, asking before push, opt-in feature flags, not echoing secrets. See each suite's README for the command.
 

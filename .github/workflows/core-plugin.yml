@@ -1,0 +1,30 @@
+name: core plugin
+
+on:
+  push:
+    paths: ["plugins/core/hooks/**", "plugins/core/scripts/**", "plugins/core/tests/**", ".github/workflows/core-plugin.yml"]
+  pull_request:
+    paths: ["plugins/core/hooks/**", "plugins/core/scripts/**", "plugins/core/tests/**", ".github/workflows/core-plugin.yml"]
+
+jobs:
+  hook-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            impls: bash poly-bash pwsh poly-pwsh
+          - os: macos-latest
+            impls: bash poly-bash pwsh poly-pwsh
+          - os: windows-latest
+            # Git Bash runs the bash impl; powershell is Windows PowerShell 5.1, the default
+            # shell for hooks on Windows without Git Bash.
+            impls: bash poly-bash pwsh poly-pwsh powershell poly-powershell
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hook tests
+        shell: bash
+        env:
+          IMPLS: ${{ matrix.impls }}
+        run: bash plugins/core/tests/run.sh
