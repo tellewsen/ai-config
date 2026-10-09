@@ -10,5 +10,6 @@ Commit and push any pending changes in the ai-config knowledge repo. Its path is
 3. Otherwise, ask the user for a brief description of what was learned or changed (one line is fine).
 4. Stage the changed files by name with `git -C "$AI_CONFIG_DIR" add <file>...` — never `add -A` or `add .`. Skip anything that looks like a secret, `.env` file, or project-specific detail that doesn't belong in a public repo, and tell the user what was skipped.
 5. Commit with message: `chore: update knowledge — <their description>` plus the standard Co-Authored-By trailer.
-6. Verify the SSH agent is running (`ssh-add -l`), then ask the user to confirm before pushing to origin main.
-7. Push and confirm success.
+6. Verify the SSH agent is running (`ssh-add -l`), then ask the user to confirm before pushing.
+7. Run `git -C "$AI_CONFIG_DIR" pull --rebase` first, since another machine may have pushed since the last sync. If the rebase hits conflicts, stop and show them — don't resolve them silently.
+8. Push to the current branch's upstream and confirm success.

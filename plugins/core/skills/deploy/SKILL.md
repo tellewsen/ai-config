@@ -5,18 +5,16 @@ description: Run a pre-deployment safety checklist before pushing to Vercel prod
 
 Run the full pre-deployment checklist before pushing anything to production.
 
-1. **Commit check**: run `git status` and `git log origin/main..HEAD`. All changes must be committed and pushed before deployment. If there are uncommitted changes or unpushed commits, stop — commit and push first, then re-run this checklist.
+1. **Commit check**: run `git status` and `git log origin/main..HEAD`. The working tree must be clean, nothing sensitive (`.env`, `*.key`, `*.pem`) may be tracked or staged, and every commit must be pushed. If not, stop — commit and push first, then re-run this checklist.
 
-2. **Secret scan**: grep staged files and recent chat context for patterns matching API key, secret, token, password, service_key. Abort and report if anything is found.
+2. **Secret scan**: grep the files changed since the last deploy (`git diff --name-only <last-deployed-ref>..HEAD`, or the last 20 commits if unknown) for API key, secret, token, password and service_key patterns. Report file and line only — never echo a matched value. Abort if anything real is found.
 
-3. **Env var audit**: diff all `.env*` files against `.env.example` (if it exists). List any vars that appear in multiple files with conflicting values. Flag any `NEXT_PUBLIC_` vars that aren't explicitly required by the project.
+3. **Env var audit**: compare variable *names* across `.env*` files and `.env.example` (if it exists) — e.g. `grep -ho '^[A-Z_][A-Z0-9_]*=' .env* | sort | uniq -c`. Never print values. List names missing from `.env.example` or set in production config but not in the example, and flag any `NEXT_PUBLIC_` var that isn't clearly meant to be public.
 
-4. **Destructive query check**: review any pending DB migrations or queries. Flag any DELETE, DROP, or TRUNCATE without a WHERE clause — show what rows would be affected and require explicit confirmation before continuing.
+4. **Destructive query check**: review pending DB migrations. Flag any DELETE, DROP, or TRUNCATE — show what rows or tables would be affected and require explicit confirmation before continuing.
 
-5. **Tests**: run `npm test` (or the project's test command from CLAUDE.md). If tests fail, stop and report — do not deploy.
+5. **Tests**: run the project's test command (from CLAUDE.md, or `npm test`). If tests fail, stop and report — do not deploy.
 
-6. **Git status**: confirm the working tree is clean and no sensitive files (`.env`, `*.key`, `*.pem`) are staged.
+6. **Summary**: present a pass/fail for each check. If anything fails, stop.
 
-7. **Summary**: present a pass/fail for each check. Only proceed to deploy if all pass. If anything fails, stop and ask for confirmation.
-
-8. **Deploy**: run `vercel --prod` and confirm the deployment URL is live.
+7. **Deploy**: check how the project deploys. If it is linked to Vercel's Git integration (a Vercel project with a connected repo, usually visible in `vercel project ls` or the dashboard), the push in step 1 already triggered the production deploy — don't run `vercel --prod` as well; find that deployment with `vercel ls --prod` and watch it instead. Otherwise ask the user to confirm, then run `vercel --prod`. Either way, confirm the production URL is live and serving the new commit.

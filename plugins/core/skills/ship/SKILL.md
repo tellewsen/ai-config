@@ -1,11 +1,11 @@
 ---
 name: ship
-description: Resolve merge conflicts, update affected docs, commit with a clear message, and push to main
+description: Resolve merge conflicts, update affected docs, run tests, commit with a clear message, and push the current branch to its upstream
 ---
 
 Complete the full ship sequence for the current branch:
 
-1. **Conflicts**: run `git status`. If there are merge conflicts, resolve them — prefer the incoming change unless context clearly says otherwise, and flag any that required a judgment call.
+1. **Conflicts**: run `git status`. If there are merge conflicts, resolve each on its merits: read both sides and keep the intent of each. Never take one side wholesale. List every hunk that needed a judgment call and get the user's OK on those before committing.
 
 2. **Docs check**: identify any docs (README, CLAUDE.md, changelogs, inline comments) affected by the changes. Update them to reflect the current behavior. Do not add docs for unchanged behavior.
 
