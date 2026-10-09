@@ -1,0 +1,39 @@
+name: pause plugin
+
+on:
+  push:
+    paths: ["plugins/pause/**", ".github/workflows/pause-plugin.yml"]
+  pull_request:
+    paths: ["plugins/pause/**", ".github/workflows/pause-plugin.yml"]
+
+jobs:
+  hook-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            impls: bash poly-bash pwsh poly-pwsh
+          - os: macos-latest
+            impls: bash poly-bash poly-zsh pwsh poly-pwsh
+          - os: windows-latest
+            # Git Bash runs the bash impl; powershell is Windows PowerShell 5.1, the default
+            # shell for hooks on Windows without Git Bash.
+            impls: bash poly-bash pwsh poly-pwsh powershell poly-powershell
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hook tests
+        shell: bash
+        env:
+          IMPLS: ${{ matrix.impls }}
+        run: bash plugins/pause/tests/run.sh
+      - name: Hook tests with mawk
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          IMPLS: bash poly-bash
+        run: |
+          command -v mawk >/dev/null || sudo apt-get install -y -qq mawk
+          mkdir -p "$RUNNER_TEMP/awk" && ln -s "$(command -v mawk)" "$RUNNER_TEMP/awk/awk"
+          PATH="$RUNNER_TEMP/awk:$PATH" bash plugins/pause/tests/run.sh

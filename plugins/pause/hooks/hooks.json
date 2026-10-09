@@ -1,5 +1,5 @@
 {
-  "description": "Offers unresumed /pause handoff notes for the current directory when a session starts or resumes, and retires notes older than 30 days.",
+  "description": "Offers unresumed /pause handoff notes for the current directory when a session starts or resumes, and retires notes older than 30 days. The command is valid in both bash and PowerShell, so it also works on Windows without Git Bash: bash runs handoff-check.sh and exits before the PowerShell part, which PowerShell reads past a block comment.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,8 +7,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/handoff-check.sh\" 2>/dev/null || true",
-            "timeout": 10
+            "command": "echo `# > $null <#` > /dev/null; \"${BASH:-bash}\" \"${CLAUDE_PLUGIN_ROOT}/scripts/handoff-check.sh\" 2>/dev/null; exit 0; #> ; [Console]::In.ReadToEnd() | & (Get-Process -Id $PID).Path -NoProfile -ExecutionPolicy Bypass -File \"$env:CLAUDE_PLUGIN_ROOT/scripts/handoff-check.ps1\"",
+            "timeout": 15
           }
         ]
       }

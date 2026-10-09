@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SessionStart hook: tell Claude about /pause handoff notes left for this directory.
 # Matches on each note's "Dir: <cwd>" line rather than its folder name, so folder
-# naming can change without breaking discovery. Bash only (works in Git Bash on Windows).
+# naming can change without breaking discovery. handoff-check.ps1 is the PowerShell twin
+# for Windows without Git Bash; keep the two in step (tests/run.sh checks both).
 
 input=$(cat)
 field() {
@@ -27,17 +28,18 @@ find "$dir" -mindepth 2 -maxdepth 2 -name '*.md' -mtime +30 2>/dev/null | while 
 find "$dir" -path '*/resumed/*.md' -mtime +30 -delete 2>/dev/null
 find "$dir" -mindepth 1 -type d -empty -delete 2>/dev/null
 
-# Prints "<session-id or ->\t<path>" per matching note, newest first. ENVIRON avoids awk's
+# Prints "<session-id or ->\t<path>" per matching note, newest first, one per session. ENVIRON avoids awk's
 # escape processing, which would mangle Windows backslashes in the Dir line.
 notes=$(find "$dir" -mindepth 2 -maxdepth 2 -name '*.md' -not -path '*/resumed/*' -print0 2>/dev/null \
-  | xargs -0 -r env D="Dir: $cwd" awk '
+  | xargs -0 env D="Dir: $cwd" awk '
       function flush() { if (hit) print (sid == "" ? "-" : sid) "\t" file; hit = 0 }
       FNR == 1 { flush(); file = FILENAME; sid = "" }
       { sub(/\r$/, "") }
       FNR <= 10 && /^Session: / { sid = substr($0, 10) }
       FNR <= 10 && $0 == ENVIRON["D"] { hit = 1 }
       END { flush() }' \
-  | awk -F'\t' '{ n = split($2, p, "/"); print p[n] "\t" $0 }' | sort -r | cut -f2-)
+  | awk -F'\t' '{ n = split($2, p, "/"); print p[n] "\t" $0 }' | sort -r | cut -f2- \
+  | awk -F'\t' '$1 == "-" || !seen[$1]++')
 [ -z "$notes" ] && exit 0
 
 # Resuming the paused session itself: the conversation already holds everything, so
