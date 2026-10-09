@@ -1,0 +1,7 @@
+{
+  "name": "core",
+  "description": "Andreas Ellewsen's everyday Claude Code setup: specialist agents (review, security, debugging, DB, devops, docs, tests), ship/deploy/sync skills, and a cargo fmt hook.",
+  "author": {
+    "name": "Andreas Ellewsen"
+  }
+}

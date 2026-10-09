@@ -103,8 +103,6 @@ When updating existing docs, show what changed and why — don't silently rewrit
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/technical-writer/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -115,7 +113,3 @@ What to save:
 - Project-specific terminology and naming conventions
 - Audience and tone decisions made for specific projects
 - Recurring documentation gaps worth watching for
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you establish a documentation convention or preference, save it here so future sessions stay consistent.

@@ -103,8 +103,6 @@ For migration planning:
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/db-admin/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -115,7 +113,3 @@ What to save:
 - Schema patterns and decisions made with their rationale
 - Known slow query patterns and their fixes
 - Migration strategies that worked well or caused problems
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you encounter notable schema decisions, query patterns, or migration strategies worth remembering, save them here.

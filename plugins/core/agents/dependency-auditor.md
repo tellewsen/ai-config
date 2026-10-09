@@ -107,8 +107,6 @@ For new dependency evaluations:
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/dependency-auditor/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -119,7 +117,3 @@ What to save:
 - Known problematic packages or recurring vulnerability patterns
 - Dependency preferences and conventions established for specific projects
 - Packages previously evaluated and the outcome
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you evaluate a notable package or find a recurring dependency issue, save it here.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # install.sh — Linux/WSL2 installer for ai-config
-# Creates symlinks for CLAUDE.md and copies agents with path substitution.
-# Safe to re-run: backs up existing files, skips existing symlinks.
+# Symlinks CLAUDE.md and installs the core plugin (agents, skills, hooks) from this
+# repo's marketplace. Also migrates machines set up before the plugin existed.
+# Safe to re-run.
 
 set -euo pipefail
 
@@ -19,11 +20,9 @@ info()   { echo -e "${CYAN}[info]${NC} $*"; }
 ok()     { echo -e "${GREEN}[ok]${NC}   $*"; }
 warn()   { echo -e "${YELLOW}[warn]${NC} $*"; }
 
-# ── 1. Create directories ────────────────────────────────────────────────────
-mkdir -p "$CLAUDE_DIR/agents"
-info "Ensured $CLAUDE_DIR/agents exists"
+mkdir -p "$CLAUDE_DIR"
 
-# ── 2. Symlink CLAUDE.md ─────────────────────────────────────────────────────
+# ── 1. Symlink CLAUDE.md ─────────────────────────────────────────────────────
 CLAUDE_MD_TARGET="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_MD_SRC="$REPO_DIR/claude/CLAUDE.md"
 
@@ -39,80 +38,49 @@ else
     ok "Linked CLAUDE.md"
 fi
 
-# ── 3. Copy agents with $HOME substitution ───────────────────────────────────
-# Agents are copied (not symlinked) so paths inside the files are expanded
-# correctly for this machine. Re-running install.sh updates them.
+# ── 2. Migrate from the pre-plugin layout ────────────────────────────────────
+# Agents and skills used to be copied/linked into ~/.claude. Left in place they
+# would shadow or duplicate the plugin's namespaced core:<name> versions.
 echo ""
-info "Installing agents..."
+for agent_src in "$REPO_DIR/plugins/core/agents/"*.md; do
+    name=$(basename "$agent_src" .md)
 
-for agent_src in "$REPO_DIR/claude/agents/"*.md; do
-    agent_name=$(basename "$agent_src")
-    agent_dst="$CLAUDE_DIR/agents/$agent_name"
+    if [ -f "$CLAUDE_DIR/agents/$name.md" ]; then
+        rm "$CLAUDE_DIR/agents/$name.md"
+        ok "Removed old agent copy: $name (now core:$name)"
+    fi
 
-    # Expand $HOME placeholder to the actual home directory
-    sed "s|\\\$HOME|$HOME|g" "$agent_src" > "$agent_dst"
-    ok "Installed agent: $agent_name"
-done
-
-# ── 4. Symlink agent memory directories into repo ────────────────────────────
-# claude/agent-memory/ is gitignored: memories record project details that must
-# not reach this public repo, so they stay on the machine that wrote them.
-echo ""
-info "Linking agent memory directories..."
-mkdir -p "$CLAUDE_DIR/agent-memory"
-
-for mem_src in "$REPO_DIR/claude/agent-memory/"*/; do
-    agent_name=$(basename "$mem_src")
-    mem_dst="$CLAUDE_DIR/agent-memory/$agent_name"
-    if [ -L "$mem_dst" ]; then
-        ok "Agent memory $agent_name already linked — skipping"
-    elif [ -d "$mem_dst" ]; then
-        # Merge any existing files into repo dir, then symlink
-        cp -n "$mem_dst"/* "$mem_src" 2>/dev/null || true
-        rm -rf "$mem_dst"
-        ln -s "$mem_src" "$mem_dst"
-        ok "Merged and linked agent memory: $agent_name"
-    else
-        ln -s "$mem_src" "$mem_dst"
-        ok "Linked agent memory: $agent_name"
+    # Plugin agents keep memory under core-<name>; carry existing memories over.
+    old_mem="$CLAUDE_DIR/agent-memory/$name"
+    new_mem="$CLAUDE_DIR/agent-memory/core-$name"
+    if [ -L "$old_mem" ] || [ -d "$old_mem" ]; then
+        if [ -e "$new_mem" ]; then
+            warn "Both agent-memory/$name and agent-memory/core-$name exist — merge by hand"
+        else
+            if [ -L "$old_mem" ]; then
+                target=$(readlink -f "$old_mem" || true)
+                rm "$old_mem"
+                if [ -n "$target" ] && [ -d "$target" ]; then mv "$target" "$new_mem"; fi
+            else
+                mv "$old_mem" "$new_mem"
+            fi
+            ok "Moved agent memory: $name → core-$name"
+        fi
     fi
 done
+rmdir "$REPO_DIR/claude/agent-memory" 2>/dev/null || true
 
-# ── 5. Symlink custom skills ──────────────────────────────────────────────────
-echo ""
-mkdir -p "$HOME/.claude/skills"
-for skill_dst in "$HOME/.claude/skills/"*; do
-    if [ -L "$skill_dst" ] && [ ! -e "$skill_dst" ]; then
-        rm "$skill_dst"
-        ok "Removed stale skill link: /$(basename "$skill_dst")"
-    fi
-done
-for skill_src in "$REPO_DIR/claude/skills/"*/; do
-    skill_name=$(basename "$skill_src")
-    skill_dst="$HOME/.claude/skills/$skill_name"
-    if [ -L "$skill_dst" ]; then
-        ok "Skill /$skill_name already linked — skipping"
-    else
-        [ -d "$skill_dst" ] && mv "$skill_dst" "$skill_dst.bak.$TIMESTAMP"
-        ln -s "$skill_src" "$skill_dst"
-        ok "Linked skill: /$skill_name"
-    fi
+for skill_dst in "$CLAUDE_DIR/skills/"*; do
+    [ -L "$skill_dst" ] || continue
+    case "$(readlink "$skill_dst")" in
+        "$REPO_DIR"/*)
+            rm "$skill_dst"
+            ok "Removed old skill link: /$(basename "$skill_dst") (now /core:$(basename "$skill_dst"))"
+            ;;
+    esac
 done
 
-# ── 6. Install trimout (output compressor for AI agent context windows) ──────
-# Pinned: trimout runs as a hook on every Bash call, so upgrades should be reviewed.
-TRIMOUT_VERSION=v0.2.0
-echo ""
-if command -v trimout &>/dev/null; then
-    info "trimout already installed — skipping"
-elif command -v go &>/dev/null; then
-    info "Installing trimout $TRIMOUT_VERSION..."
-    go install github.com/ristaloff/trimout@$TRIMOUT_VERSION 2>/dev/null && ok "Installed trimout" || warn "trimout install failed — install manually: go install github.com/ristaloff/trimout@$TRIMOUT_VERSION"
-else
-    warn "Go not found — skipping trimout install (install Go then: go install github.com/ristaloff/trimout@$TRIMOUT_VERSION)"
-fi
-
-# ── 6. Copy settings.template.json if settings.json is absent ────────────────
+# ── 3. Copy settings.template.json if settings.json is absent ────────────────
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -120,11 +88,67 @@ SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
 if [ ! -f "$SETTINGS_TARGET" ]; then
     cp "$SETTINGS_SRC" "$SETTINGS_TARGET"
     ok "Copied settings.template.json → settings.json"
+elif command -v python3 &>/dev/null; then
+    # Existing settings predate the plugin: drop hooks it replaced, enable it, and
+    # turn on marketplace auto-update so later changes arrive without this script.
+    cp "$SETTINGS_TARGET" "$SETTINGS_TARGET.bak.$TIMESTAMP"
+    result=$(python3 - "$SETTINGS_TARGET" "$SETTINGS_TARGET.bak.$TIMESTAMP" <<'EOF'
+import json, os, sys
+path, backup = sys.argv[1], sys.argv[2]
+s = json.load(open(path))
+before = json.dumps(s, sort_keys=True)
+hooks = s.get("hooks", {})
+for event in list(hooks):
+    groups = []
+    for g in hooks[event]:
+        g["hooks"] = [h for h in g.get("hooks", [])
+                      if "trimout" not in h.get("command", "")
+                      and "cargo fmt" not in h.get("command", "")]
+        for h in g["hooks"]:
+            c = h.get("command", "")
+            h["command"] = c.replace(" && bash install.sh >/dev/null 2>&1", "").replace("run /sync", "run /core:sync")
+        if g["hooks"]:
+            groups.append(g)
+    if groups:
+        hooks[event] = groups
+    else:
+        del hooks[event]
+s.setdefault("enabledPlugins", {}).setdefault("core@ai-config", True)
+mkt = s.setdefault("extraKnownMarketplaces", {}).setdefault(
+    "ai-config", {"source": {"source": "github", "repo": "tellewsen/ai-config"}})
+mkt["autoUpdate"] = True
+if json.dumps(s, sort_keys=True) == before:
+    os.remove(backup)
+    print("unchanged")
+else:
+    json.dump(s, open(path, "w"), indent=2, ensure_ascii=False)
+    open(path, "a").write("\n")
+    print("updated")
+EOF
+)
+    if [ "$result" = updated ]; then
+        ok "Migrated settings.json (backup: settings.json.bak.$TIMESTAMP)"
+    else
+        info "settings.json already up to date"
+    fi
 else
-    info "settings.json already exists — not overwriting (manage plugins via Claude Code)"
+    warn "python3 not found — enable core@ai-config and set autoUpdate on the ai-config marketplace in settings.json by hand"
 fi
 
-# ── 7. Set up project memory for this repo ───────────────────────────────────
+# ── 4. Install the core plugin ───────────────────────────────────────────────
+echo ""
+if command -v claude &>/dev/null; then
+    claude plugin marketplace add tellewsen/ai-config >/dev/null 2>&1 || true
+    if claude plugin install core@ai-config >/dev/null 2>&1; then
+        ok "Installed plugin core@ai-config"
+    else
+        warn "Plugin install failed — run: claude plugin install core@ai-config"
+    fi
+else
+    warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
+fi
+
+# ── 5. Set up project memory for this repo ───────────────────────────────────
 # Claude Code encodes paths as the absolute path with / replaced by -
 echo ""
 ENCODED_PATH=$(echo "$REPO_DIR" | sed 's|/|-|g')
@@ -142,15 +166,13 @@ else
     info "Memory file already exists — not overwriting"
 fi
 
-# ── 8. Done ───────────────────────────────────────────────────────────────────
+# ── 6. Done ───────────────────────────────────────────────────────────────────
 echo ""
 ok "Installation complete."
 echo ""
 echo "  Symlinked: $CLAUDE_DIR/CLAUDE.md → $REPO_DIR/claude/CLAUDE.md"
-echo "  Agents installed in: $CLAUDE_DIR/agents/"
-echo "  Memory: $MEMORY_FILE"
+echo "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
+echo "  Memory:    $MEMORY_FILE"
 echo ""
 echo "  To use Copilot instructions in a project:"
 echo "    cp $REPO_DIR/copilot/copilot-instructions.md <project>/.github/copilot-instructions.md"
-echo ""
-echo "  To update agents after repo changes: re-run this script."

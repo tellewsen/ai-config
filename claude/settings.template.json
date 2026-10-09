@@ -1,43 +1,11 @@
 {
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "trimout hook"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "trimout metrics"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "test -f Cargo.toml && cargo fmt --quiet 2>/dev/null; true",
-            "async": true
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "cd ~/projects/privat/ai-config && git status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /sync to save your learnings.\"}' || true"
+            "command": "cd ~/projects/privat/ai-config && git status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}' || true"
           }
         ]
       }
@@ -47,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ssh-add -l >/dev/null 2>&1 && (cd ~/projects/privat/ai-config && git pull --ff-only && bash install.sh >/dev/null 2>&1) || echo '[SessionStart] No SSH agent — skipping ai-config sync'",
+            "command": "ssh-add -l >/dev/null 2>&1 && (cd ~/projects/privat/ai-config && git pull --ff-only --quiet) || echo '[SessionStart] No SSH agent — skipping ai-config sync'",
             "async": true
           }
         ]
@@ -55,6 +23,7 @@
     ]
   },
   "enabledPlugins": {
+    "core@ai-config": true,
     "gopls-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
@@ -71,7 +40,8 @@
       "source": {
         "source": "github",
         "repo": "tellewsen/ai-config"
-      }
+      },
+      "autoUpdate": true
     }
   }
 }

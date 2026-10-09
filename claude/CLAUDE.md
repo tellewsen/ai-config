@@ -78,7 +78,7 @@
 
 ## Claude Skills Format
 
-Custom skills use the subdirectory format: `~/.claude/skills/<skill-name>/SKILL.md` — never a flat `.md` file.
+Custom skills use the subdirectory format: `<skill-name>/SKILL.md` — never a flat `.md` file. Shared ones live in the ai-config repo at `plugins/core/skills/`.
 
 ## Scope Guide
 
@@ -93,12 +93,12 @@ When a project CLAUDE.md exists, its rules take precedence over these globals fo
 The ai-config repo (`~/projects/privat/ai-config`) is the source of truth for global knowledge. When something worth preserving is discovered during a session:
 
 - **New universal preference or convention** → update `claude/CLAUDE.md` in the repo
-- **New or improved agent** → update `claude/agents/<name>.md`, then re-run `install.sh`
+- **New or improved agent or skill** → update `plugins/core/agents/<name>.md` or `plugins/core/skills/<name>/SKILL.md`; machines pick it up through plugin auto-update
 - **New Copilot convention** → update `copilot/copilot-instructions.md`
 
-After updating, run `/sync` to commit and push so all machines stay in sync. It follows the Git Workflow rules above: files staged by name, push only after confirmation.
+After updating, run `/core:sync` to commit and push so all machines stay in sync. It follows the Git Workflow rules above: files staged by name, push only after confirmation.
 
-Do this proactively when something clearly belongs in the global knowledge base. On other machines: `git pull` then re-run `install.sh`.
+Do this proactively when something clearly belongs in the global knowledge base. Other machines pull the repo on session start (for CLAUDE.md) and auto-update the plugin.
 
 ## What Belongs Here vs Project CLAUDE.md
 

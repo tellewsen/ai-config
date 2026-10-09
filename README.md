@@ -1,14 +1,14 @@
 # ai-config
 
-Personal AI tooling knowledge base — Claude Code agents, global instructions, and GitHub Copilot templates. Clone it, run the installer, and Claude Code picks up all your agents and global instructions on any machine.
+Personal AI tooling knowledge base — global Claude Code instructions, a Claude Code plugin marketplace (agents, skills, hooks), and GitHub Copilot templates. Clone it, run the installer, and every machine gets the same setup.
 
 ## What's included
 
 | Path | What it does |
 |---|---|
 | `claude/CLAUDE.md` | Global Claude Code instructions (auto-loaded in every session) |
-| `claude/agents/*.md` | 10 specialized Claude Code agents |
-| `claude/settings.template.json` | Plugin config template (one-time copy on install) |
+| `plugins/core/` | The everyday setup as a plugin: 10 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `cargo fmt` hook |
+| `claude/settings.template.json` | Settings template: enabled plugins, marketplace auto-update, ai-config sync hooks (copied on first install) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
 | `copilot/copilot-instructions.md` | GitHub Copilot instructions template for projects |
 | `memory/MEMORY.template.md` | Scaffold for Claude Code project memory |
@@ -24,9 +24,10 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 
 | Plugin | What it does |
 |---|---|
+| `core` | Specialist agents (`core:code-reviewer`, `core:debugger`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a `cargo fmt` hook for Rust projects. |
 | `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
 
-Update later with `/plugin marketplace update ai-config`.
+Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).
 
 ## Prerequisites
 
@@ -59,14 +60,17 @@ Verify:
 ```bash
 # Linux
 ls -la ~/.claude/CLAUDE.md       # should be a symlink
-ls ~/.claude/agents/             # should list all 10 agents
 
 # Windows PowerShell
 dir $env:USERPROFILE\.claude\CLAUDE.md
-dir $env:USERPROFILE\.claude\agents\
+
+# Both
+claude plugin list               # should list core@ai-config
 ```
 
 Open Claude Code in any directory — global CLAUDE.md is now active.
+
+The installer also migrates machines set up before the plugin existed: it removes the old copies in `~/.claude/agents/` and skill links in `~/.claude/skills/`, moves agent memories to `~/.claude/agent-memory/core-<name>/`, and (on Linux) drops the hooks the plugin replaced from `settings.json`, keeping a backup.
 
 ## Using Copilot instructions
 
@@ -100,24 +104,19 @@ cp ~/projects/privat/ai-config/memory/MEMORY.template.md \
 
 ## Updating
 
-After pulling changes, re-run the installer. Agent files are updated automatically; `CLAUDE.md` is a symlink so it updates instantly.
+Nothing to re-run. `CLAUDE.md` is a symlink, and a SessionStart hook pulls the repo when an SSH agent is available. Agents, skills and hooks arrive through plugin auto-update; to update right away, run `/plugin marketplace update ai-config`.
 
-```bash
-cd ~/projects/privat/ai-config
-git pull
-bash install.sh      # Linux
-.\install.ps1        # Windows
-```
+## Adding an agent or skill
 
-## Adding a new agent
+1. Create `plugins/core/agents/my-agent.md` or `plugins/core/skills/my-skill/SKILL.md`
+2. Test locally with `claude --plugin-dir plugins/core`
+3. Commit and push; it shows up as `core:my-agent` or `/core:my-skill` after the next plugin update
 
-1. Create `claude/agents/my-agent.md` with the agent definition
-2. Re-run `install.sh` (or `install.ps1`)
-3. The agent appears in Claude Code immediately
+Agents with `memory: user` keep their memory in `~/.claude/agent-memory/core-<name>/`. That directory is local to each machine and never committed, since memories hold project details.
 
 ## Agents included
 
-| Agent | Role | Model |
+| Agent (`core:` prefix) | Role | Model |
 |---|---|---|
 | `backend-architect` | API design, data layers, auth, DB optimization | Sonnet |
 | `code-reviewer` | Critical independent code review | Sonnet |

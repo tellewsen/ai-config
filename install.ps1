@@ -1,49 +1,40 @@
 #Requires -Version 5.1
 # install.ps1 — Windows native installer for ai-config
-# Creates a symlink for CLAUDE.md and copies agents with path substitution.
-# Requires Developer Mode enabled (Settings > For Developers > Developer Mode)
-# OR run as Administrator for symlink creation.
-# Safe to re-run: backs up existing files, skips existing symlinks.
+# Symlinks CLAUDE.md and installs the core plugin (agents, skills, hooks) from this
+# repo's marketplace. Also migrates machines set up before the plugin existed.
+# Symlinks need Developer Mode (Settings > For Developers) or an Administrator shell.
+# Safe to re-run.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$RepoDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ClaudeDir = Join-Path $env:USERPROFILE '.claude'
-$AgentsDir = Join-Path $ClaudeDir 'agents'
 $Timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
 function Write-Info  { param($msg) Write-Host "[info] $msg" -ForegroundColor Cyan }
 function Write-Ok    { param($msg) Write-Host "[ok]   $msg" -ForegroundColor Green }
 function Write-Warn  { param($msg) Write-Host "[warn] $msg" -ForegroundColor Yellow }
 
-# ── 1. Create directories ────────────────────────────────────────────────────
-New-Item -ItemType Directory -Force -Path $AgentsDir | Out-Null
-Write-Info "Ensured $AgentsDir exists"
+New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
 
-# ── 2. Symlink CLAUDE.md ─────────────────────────────────────────────────────
+# ── 1. Symlink CLAUDE.md ─────────────────────────────────────────────────────
 $ClaudeMdTarget = Join-Path $ClaudeDir 'CLAUDE.md'
 $ClaudeMdSrc    = Join-Path $RepoDir 'claude\CLAUDE.md'
 
-$isSymlink = (Get-Item $ClaudeMdTarget -ErrorAction SilentlyContinue)?.LinkType -eq 'SymbolicLink'
+$existing  = Get-Item $ClaudeMdTarget -ErrorAction SilentlyContinue
+$isSymlink = $existing -and $existing.LinkType -eq 'SymbolicLink'
 
 if ($isSymlink) {
     Write-Ok "CLAUDE.md already symlinked — skipping"
-} elseif (Test-Path $ClaudeMdTarget) {
-    $backup = "$ClaudeMdTarget.bak.$Timestamp"
-    Write-Warn "Backing up existing CLAUDE.md → $backup"
-    Move-Item $ClaudeMdTarget $backup
-    try {
-        cmd /c mklink "$ClaudeMdTarget" "$ClaudeMdSrc" | Out-Null
-        Write-Ok "Linked CLAUDE.md"
-    } catch {
-        Write-Warn "Symlink failed (need Developer Mode or Admin). Copying instead."
-        Copy-Item $ClaudeMdSrc $ClaudeMdTarget
-        Write-Ok "Copied CLAUDE.md (not symlinked — edits won't auto-sync)"
-    }
 } else {
+    if ($existing) {
+        $backup = "$ClaudeMdTarget.bak.$Timestamp"
+        Write-Warn "Backing up existing CLAUDE.md → $backup"
+        Move-Item $ClaudeMdTarget $backup
+    }
     try {
-        cmd /c mklink "$ClaudeMdTarget" "$ClaudeMdSrc" | Out-Null
+        New-Item -ItemType SymbolicLink -Path $ClaudeMdTarget -Target $ClaudeMdSrc | Out-Null
         Write-Ok "Linked CLAUDE.md"
     } catch {
         Write-Warn "Symlink failed (need Developer Mode or Admin). Copying instead."
@@ -52,24 +43,33 @@ if ($isSymlink) {
     }
 }
 
-# ── 3. Copy agents with path substitution ────────────────────────────────────
+# ── 2. Migrate from the pre-plugin layout ────────────────────────────────────
+# Agents used to be copied into ~/.claude/agents. Left in place they would
+# duplicate the plugin's namespaced core:<name> versions.
 Write-Host ""
-Write-Info "Installing agents..."
+Get-ChildItem (Join-Path $RepoDir 'plugins\core\agents\*.md') | ForEach-Object {
+    $name = $_.BaseName
 
-$HomeDir = $env:USERPROFILE -replace '\\', '\\'
+    $oldAgent = Join-Path $ClaudeDir "agents\$name.md"
+    if (Test-Path $oldAgent) {
+        Remove-Item $oldAgent
+        Write-Ok "Removed old agent copy: $name (now core:$name)"
+    }
 
-Get-ChildItem (Join-Path $RepoDir 'claude\agents\*.md') | ForEach-Object {
-    $src  = $_.FullName
-    $dst  = Join-Path $AgentsDir $_.Name
-
-    # Expand $HOME placeholder — on Windows Claude uses USERPROFILE
-    $content = Get-Content $src -Raw
-    $content = $content -replace '\$HOME', $env:USERPROFILE.Replace('\', '\\')
-    Set-Content -Path $dst -Value $content -Encoding UTF8
-    Write-Ok "Installed agent: $($_.Name)"
+    # Plugin agents keep memory under core-<name>; carry existing memories over.
+    $oldMem = Join-Path $ClaudeDir "agent-memory\$name"
+    $newMem = Join-Path $ClaudeDir "agent-memory\core-$name"
+    if (Test-Path $oldMem) {
+        if (Test-Path $newMem) {
+            Write-Warn "Both agent-memory\$name and agent-memory\core-$name exist — merge by hand"
+        } else {
+            Move-Item $oldMem $newMem
+            Write-Ok "Moved agent memory: $name → core-$name"
+        }
+    }
 }
 
-# ── 4. Copy settings.template.json if settings.json is absent ────────────────
+# ── 3. Copy settings.template.json if settings.json is absent ────────────────
 Write-Host ""
 $SettingsTarget = Join-Path $ClaudeDir 'settings.json'
 $SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
@@ -79,6 +79,23 @@ if (-not (Test-Path $SettingsTarget)) {
     Write-Ok "Copied settings.template.json → settings.json"
 } else {
     Write-Info "settings.json already exists — not overwriting"
+    Write-Info "  Make sure it enables core@ai-config and sets autoUpdate on the ai-config marketplace (see claude\settings.template.json)"
+}
+
+# ── 4. Install the core plugin ───────────────────────────────────────────────
+Write-Host ""
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    # PowerShell 5.1 turns redirected native stderr into errors, which Stop would make fatal.
+    try { & claude plugin marketplace add tellewsen/ai-config *> $null } catch { }
+    $installed = $false
+    try { & claude plugin install core@ai-config *> $null; $installed = ($LASTEXITCODE -eq 0) } catch { }
+    if ($installed) {
+        Write-Ok "Installed plugin core@ai-config"
+    } else {
+        Write-Warn "Plugin install failed — run: claude plugin install core@ai-config"
+    }
+} else {
+    Write-Warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
 }
 
 # ── 5. Set up project memory for this repo ───────────────────────────────────
@@ -107,10 +124,8 @@ Write-Host ""
 Write-Ok "Installation complete."
 Write-Host ""
 Write-Host "  CLAUDE.md: $ClaudeMdTarget"
-Write-Host "  Agents:    $AgentsDir"
+Write-Host "  Plugin:    core@ai-config (agents core:<name>, skills /core:<name>), auto-updates"
 Write-Host "  Memory:    $MemoryFile"
 Write-Host ""
 Write-Host "  To use Copilot instructions in a project:"
 Write-Host "    Copy $RepoDir\copilot\copilot-instructions.md to <project>\.github\copilot-instructions.md"
-Write-Host ""
-Write-Host "  To update agents after repo changes: re-run this script."

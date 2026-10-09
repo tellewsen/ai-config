@@ -88,8 +88,6 @@ When you find the bug, explain it plainly: "The bug is X because Y. The fix is Z
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/debugger/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -100,7 +98,3 @@ What to save:
 - Environmental quirks discovered (WSL behavior, specific Node version bugs, etc.)
 - Debugging techniques that proved effective for specific problem classes
 - Root causes of past bugs worth watching for again
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you resolve a non-obvious bug, consider saving the root cause pattern here so you recognize it faster next time.

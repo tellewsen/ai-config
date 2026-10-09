@@ -71,8 +71,6 @@ Examples of what to record:
 
 # Persistent Agent Memory
 
-You have a persistent Persistent Agent Memory directory at `$HOME/.claude/agent-memory/frontend-architect/`. Its contents persist across conversations.
-
 As you work, consult your memory files to build on previous experience. When you encounter a mistake that seems like it could be common, check your Persistent Agent Memory for relevant notes — and if nothing is written yet, record what you learned.
 
 Guidelines:
@@ -99,7 +97,3 @@ Explicit user requests:
 - When the user asks to forget or stop remembering something, find and remove the relevant entries from your memory files
 - When the user corrects you on something you stated from memory, you MUST update or remove the incorrect entry. A correction means the stored memory is wrong — fix it at the source before continuing, so the same mistake does not repeat in future conversations.
 - Since this memory is user-scope, keep learnings general since they apply across all projects
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you notice a pattern worth preserving across sessions, save it here. Anything in MEMORY.md will be included in your system prompt next time.

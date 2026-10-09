@@ -108,8 +108,6 @@ End with a **risk summary**: the top 3 things to fix before this ships, in prior
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/security-auditor/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -120,7 +118,3 @@ What to save:
 - Security decisions made and their rationale
 - Known risky areas that need ongoing attention
 - Auth and session patterns in use
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you find a notable vulnerability pattern or security decision, save it here to inform future audits.

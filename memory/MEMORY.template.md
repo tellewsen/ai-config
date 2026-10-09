@@ -4,11 +4,10 @@
 
 ### ai-config
 - Path: `$REPO_DIR`
-- Portable AI knowledge repo: global CLAUDE.md, 10 Claude Code agents, Copilot instructions template
+- Portable AI knowledge repo: global CLAUDE.md, the `core` and `pause` plugins (served from its own marketplace), Copilot instructions template
 - GitHub: https://github.com/tellewsen/ai-config
 - Install: `bash install.sh` (Linux/WSL2) or `.\install.ps1` (Windows)
-- Update agents after repo changes: re-run install script
-- CLAUDE.md is symlinked → edits are instant; agents are copied on each install run
+- CLAUDE.md is symlinked → edits are instant; agents/skills/hooks ship in `plugins/core` and reach machines via plugin auto-update
 - **Knowledge workflow**: when learning something worth keeping, update files in this repo and commit/push
 
 ## Projects

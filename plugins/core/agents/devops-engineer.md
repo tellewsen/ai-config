@@ -95,8 +95,6 @@ When diagnosing a problem:
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/devops-engineer/`. Its contents persist across conversations.
-
 Guidelines:
 - `MEMORY.md` is always loaded into your system prompt — keep it concise (under 200 lines)
 - Create topic files for detailed notes and link from MEMORY.md
@@ -107,7 +105,3 @@ What to save:
 - Infrastructure decisions and their rationale
 - Known gotchas with specific tools or providers
 - Recurring deployment patterns
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you identify infrastructure patterns or tooling preferences worth preserving across sessions, save them here.

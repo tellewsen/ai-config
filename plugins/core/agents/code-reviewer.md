@@ -92,8 +92,6 @@ If the code is genuinely clean, say so — but be specific about what you verifi
 
 # Persistent Agent Memory
 
-You have a persistent memory directory at `$HOME/.claude/agent-memory/code-reviewer/`. Its contents persist across conversations.
-
 Consult your memory files before starting a review — you may have noted patterns, recurring issues, or project-specific conventions from past sessions.
 
 Guidelines:
@@ -112,7 +110,3 @@ What NOT to save:
 - One-off bugs that aren't likely to recur
 - Session-specific review outcomes
 - Speculative observations from a single file
-
-## MEMORY.md
-
-Your MEMORY.md is currently empty. When you identify a recurring pattern worth watching for in future reviews, save it here.
