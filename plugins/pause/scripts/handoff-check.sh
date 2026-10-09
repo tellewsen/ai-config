@@ -11,6 +11,14 @@ cwd=$(printf '%s' "$input" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | h
 dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/handoffs"
 [ -d "$dir" ] || exit 0
 
+# Housekeeping: a note nobody resumed in 30 days is stale, so retire it to resumed/;
+# resumed notes are kept 30 more days in case one is needed again, then deleted.
+find "$dir" -mindepth 2 -maxdepth 2 -name '*.md' -mtime +30 2>/dev/null | while IFS= read -r f; do
+  mkdir -p "$(dirname "$f")/resumed" && mv "$f" "$(dirname "$f")/resumed/" && touch "$(dirname "$f")/resumed/$(basename "$f")"
+done
+find "$dir" -path '*/resumed/*.md' -mtime +30 -delete 2>/dev/null
+find "$dir" -mindepth 1 -type d -empty -delete 2>/dev/null
+
 # ENVIRON avoids awk's escape processing, which would mangle Windows backslashes.
 notes=$(find "$dir" -mindepth 2 -maxdepth 2 -name '*.md' -not -path '*/resumed/*' -print0 2>/dev/null \
   | xargs -0 -r env D="Dir: $cwd" awk '{ sub(/\r$/, "") } $0 == ENVIRON["D"] { print FILENAME; nextfile }' \

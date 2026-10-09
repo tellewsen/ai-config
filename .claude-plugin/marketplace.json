@@ -1,0 +1,15 @@
+{
+  "name": "ai-config",
+  "description": "Claude Code plugins from Andreas Ellewsen's ai-config",
+  "owner": {
+    "name": "Andreas Ellewsen"
+  },
+  "plugins": [
+    {
+      "name": "pause",
+      "description": "End-of-day session handoff: stop background work, save a handoff note, and resume from it next session.",
+      "source": "./plugins/pause",
+      "category": "productivity"
+    }
+  ]
+}

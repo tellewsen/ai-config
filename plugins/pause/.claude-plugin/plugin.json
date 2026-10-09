@@ -1,0 +1,7 @@
+{
+  "name": "pause",
+  "description": "Stop a Claude Code session cleanly at the end of the day: halt background work, save a handoff note, and get the note offered back automatically when a session next starts in that directory.",
+  "author": {
+    "name": "Andreas Ellewsen"
+  }
+}

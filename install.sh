@@ -81,6 +81,12 @@ done
 # ── 5. Symlink custom skills ──────────────────────────────────────────────────
 echo ""
 mkdir -p "$HOME/.claude/skills"
+for skill_dst in "$HOME/.claude/skills/"*; do
+    if [ -L "$skill_dst" ] && [ ! -e "$skill_dst" ]; then
+        rm "$skill_dst"
+        ok "Removed stale skill link: /$(basename "$skill_dst")"
+    fi
+done
 for skill_src in "$REPO_DIR/claude/skills/"*/; do
     skill_name=$(basename "$skill_src")
     skill_dst="$HOME/.claude/skills/$skill_name"

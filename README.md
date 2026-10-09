@@ -9,8 +9,24 @@ Personal AI tooling knowledge base — Claude Code agents, global instructions, 
 | `claude/CLAUDE.md` | Global Claude Code instructions (auto-loaded in every session) |
 | `claude/agents/*.md` | 10 specialized Claude Code agents |
 | `claude/settings.template.json` | Plugin config template (one-time copy on install) |
+| `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
 | `copilot/copilot-instructions.md` | GitHub Copilot instructions template for projects |
 | `memory/MEMORY.template.md` | Scaffold for Claude Code project memory |
+
+## Plugins
+
+This repo is also a Claude Code plugin marketplace. Anyone can install its plugins without cloning it:
+
+```
+/plugin marketplace add tellewsen/ai-config
+/plugin install pause@ai-config
+```
+
+| Plugin | What it does |
+|---|---|
+| `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
+
+Update later with `/plugin marketplace update ai-config`.
 
 ## Prerequisites
 

@@ -1,0 +1,17 @@
+{
+  "description": "Offers unresumed /pause handoff notes for the current directory when a session starts or resumes, and retires notes older than 30 days.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/handoff-check.sh\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

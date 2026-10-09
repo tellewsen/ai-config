@@ -51,29 +51,26 @@
             "async": true
           }
         ]
-      },
-      {
-        "matcher": "startup|resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/pause/scripts/handoff-check.sh\" 2>/dev/null || true",
-            "timeout": 10
-          }
-        ]
       }
     ]
   },
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "pause@ai-config": true
   },
   "extraKnownMarketplaces": {
     "claude-code-plugins": {
       "source": {
         "source": "github",
         "repo": "anthropics/claude-code"
+      }
+    },
+    "ai-config": {
+      "source": {
+        "source": "github",
+        "repo": "tellewsen/ai-config"
       }
     }
   }
