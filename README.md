@@ -7,7 +7,7 @@ Personal AI tooling knowledge base — global Claude Code instructions, a Claude
 | Path | What it does |
 |---|---|
 | `claude/CLAUDE.md` | Global Claude Code instructions (auto-loaded in every session) |
-| `plugins/core/` | The everyday setup as a plugin: 10 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `cargo fmt` hook |
+| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `cargo fmt` hook |
 | `claude/settings.template.json` | Settings template: enabled plugins, marketplace auto-update, ai-config sync hooks (copied on first install) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
 | `copilot/copilot-instructions.md` | GitHub Copilot instructions template for projects |
@@ -24,7 +24,7 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 
 | Plugin | What it does |
 |---|---|
-| `core` | Specialist agents (`core:code-reviewer`, `core:debugger`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a `cargo fmt` hook for Rust projects. |
+| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a `cargo fmt` hook for Rust projects. |
 | `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
 
 Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).
@@ -119,12 +119,12 @@ Agents with `memory: user` keep their memory in `~/.claude/agent-memory/core-<na
 | Agent (`core:` prefix) | Role | Model |
 |---|---|---|
 | `backend-architect` | API design, data layers, auth, DB optimization | Sonnet |
-| `code-reviewer` | Critical independent code review | Sonnet |
 | `db-admin` | Schema design, migrations, query optimization | Sonnet |
 | `debugger` | Root-cause debugging with scientific method | Opus |
 | `dependency-auditor` | CVE audits, upgrade assessment, package evaluation | Haiku |
 | `devops-engineer` | CI/CD, Docker, infrastructure, secrets | Sonnet |
 | `frontend-architect` | React/Next.js, CSS, accessibility, UX | Sonnet |
-| `security-auditor` | Vulnerability and threat modeling | Opus |
 | `technical-writer` | READMEs, API docs, ADRs, changelogs | Haiku |
 | `test-suite-architect` | Unit, integration, and E2E test strategy | Sonnet |
+
+For code and security review, use the built-in `/code-review` and `/security-review` (and the `feature-dev` plugin's `code-reviewer` agent) rather than custom agents.

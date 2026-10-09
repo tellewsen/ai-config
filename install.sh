@@ -68,6 +68,15 @@ for agent_src in "$REPO_DIR/plugins/core/agents/"*.md; do
         fi
     fi
 done
+# Retired in favor of the built-in /code-review and /security-review.
+for name in code-reviewer security-auditor; do
+    if [ -f "$CLAUDE_DIR/agents/$name.md" ]; then
+        rm "$CLAUDE_DIR/agents/$name.md"
+        ok "Removed retired agent: $name"
+    fi
+    # Only the link into the repo; a real directory holds memories we leave alone.
+    if [ -L "$CLAUDE_DIR/agent-memory/$name" ]; then rm "$CLAUDE_DIR/agent-memory/$name"; fi
+done
 rmdir "$REPO_DIR/claude/agent-memory" 2>/dev/null || true
 
 for skill_dst in "$CLAUDE_DIR/skills/"*; do

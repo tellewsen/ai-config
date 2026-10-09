@@ -69,6 +69,15 @@ Get-ChildItem (Join-Path $RepoDir 'plugins\core\agents\*.md') | ForEach-Object {
     }
 }
 
+# Retired in favor of the built-in /code-review and /security-review.
+foreach ($name in 'code-reviewer', 'security-auditor') {
+    $oldAgent = Join-Path $ClaudeDir "agents\$name.md"
+    if (Test-Path $oldAgent) {
+        Remove-Item $oldAgent
+        Write-Ok "Removed retired agent: $name"
+    }
+}
+
 # ── 3. Copy settings.template.json if settings.json is absent ────────────────
 Write-Host ""
 $SettingsTarget = Join-Path $ClaudeDir 'settings.json'
