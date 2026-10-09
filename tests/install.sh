@@ -6,7 +6,9 @@
 set -u
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 FAIL=0; PASS=0
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/ai-config-install.XXXXXX")
+# Canonical path: macOS's $TMPDIR ends in / and sits behind the /var -> /private/var link,
+# while install.sh derives its paths with pwd, so raw paths would never compare equal.
+WORK=$(cd "$(mktemp -d "${TMPDIR:-/tmp}/ai-config-install.XXXXXX")" && pwd -P)
 trap 'rm -rf "$WORK"' EXIT
 
 check() {  # description, then a command that must succeed
