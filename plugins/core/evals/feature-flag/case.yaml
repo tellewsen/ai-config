@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: feature-flag
+description: A new feature flag is opt-in (off unless an env var enables it), or Claude asks which direction before writing code.
+context:
+  scaffold_script: fixture.sh

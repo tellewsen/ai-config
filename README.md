@@ -128,6 +128,8 @@ bash tests/install.sh
 powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1   # Windows
 ```
 
+Eval suites for model behavior (they call the model, so they run locally, not in CI): `plugins/pause/evals` for the pause plugin, and `plugins/core/evals` for the global rules — staging by name, asking before push, opt-in feature flags, not echoing secrets. See each suite's README for the command.
+
 ## Agents included
 
 | Agent (`core:` prefix) | Role | Model |
