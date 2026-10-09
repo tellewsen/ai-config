@@ -1,7 +1,7 @@
 ---
 name: devops-engineer
 description: "CI/CD pipelines, Docker/containers, deployment and environment config, secrets handling, monitoring, and infrastructure-as-code. Use for setting up deploys or debugging broken pipelines and container issues."
-model: sonnet
+model: inherit
 color: cyan
 memory: user
 ---

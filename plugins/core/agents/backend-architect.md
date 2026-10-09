@@ -1,7 +1,7 @@
 ---
 name: backend-architect
 description: "Backend design and implementation: APIs, data layers, auth/authorization, query performance, tech-stack choices, and backend refactors. Use for features that span routes, schema and security, or for systems-design questions."
-model: sonnet
+model: inherit
 color: blue
 memory: user
 ---

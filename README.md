@@ -132,13 +132,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1   # Window
 
 | Agent (`core:` prefix) | Role | Model |
 |---|---|---|
-| `backend-architect` | API design, data layers, auth, DB optimization | Sonnet |
-| `db-admin` | Schema design, migrations, query optimization | Sonnet |
-| `debugger` | Root-cause debugging with scientific method | Opus |
+| `backend-architect` | API design, data layers, auth, DB optimization | Session model |
+| `db-admin` | Schema design, migrations, query optimization | Session model |
+| `debugger` | Root-cause debugging with scientific method | Session model |
 | `dependency-auditor` | CVE audits, upgrade assessment, package evaluation | Haiku |
-| `devops-engineer` | CI/CD, Docker, infrastructure, secrets | Sonnet |
-| `frontend-architect` | React/Next.js, CSS, accessibility, UX | Sonnet |
-| `technical-writer` | READMEs, API docs, ADRs, changelogs | Haiku |
-| `test-suite-architect` | Unit, integration, and E2E test strategy | Sonnet |
+| `devops-engineer` | CI/CD, Docker, infrastructure, secrets | Session model |
+| `frontend-architect` | React/Next.js, CSS, accessibility, UX | Session model |
+| `technical-writer` | READMEs, API docs, ADRs, changelogs | Session model |
+| `test-suite-architect` | Unit, integration, and E2E test strategy | Session model |
+
+"Session model" means `model: inherit`: the agent uses whatever model the session runs on. Only `dependency-auditor`, which mostly runs audit tools and summarizes their output, is pinned to Haiku.
 
 For code and security review, use the built-in `/code-review` and `/security-review` (and the `feature-dev` plugin's `code-reviewer` agent) rather than custom agents.

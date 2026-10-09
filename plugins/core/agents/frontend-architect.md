@@ -1,7 +1,7 @@
 ---
 name: frontend-architect
 description: "Frontend design and implementation: component architecture, UI/UX and mobile behavior, CSS architecture, accessibility, state management, and frontend performance. Also reviews frontend code."
-model: sonnet
+model: inherit
 color: green
 memory: user
 ---

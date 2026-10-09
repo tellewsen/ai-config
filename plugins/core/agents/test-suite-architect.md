@@ -1,7 +1,7 @@
 ---
 name: test-suite-architect
 description: "Designs, writes and reviews tests: unit, integration and end-to-end. Use after new features, before refactors, when adding a test stack, or to find meaningful coverage gaps."
-model: sonnet
+model: inherit
 color: yellow
 memory: user
 ---

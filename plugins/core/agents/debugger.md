@@ -1,7 +1,7 @@
 ---
 name: debugger
 description: "Root-cause debugging in an isolated context: forms and eliminates hypotheses for bugs that are intermittent, environment-specific, or unexplained regressions. Use when stuck, not for obvious fixes."
-model: opus
+model: inherit
 color: red
 memory: user
 ---

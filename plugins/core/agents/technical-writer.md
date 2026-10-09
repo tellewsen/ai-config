@@ -1,7 +1,7 @@
 ---
 name: technical-writer
 description: "Writes or updates documentation from the actual code: READMEs, API references, setup guides, changelogs, ADRs, and onboarding docs."
-model: haiku
+model: inherit
 color: gray
 memory: user
 ---

@@ -1,7 +1,7 @@
 ---
 name: db-admin
 description: "Deep database work: schema and data-model design, safe (zero-downtime) migrations, index strategy, and diagnosing slow queries from EXPLAIN plans. Use when schema changes carry production risk or queries are slow."
-model: sonnet
+model: inherit
 color: orange
 memory: user
 ---
