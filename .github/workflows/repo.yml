@@ -1,0 +1,45 @@
+name: repo
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      # Pinned so a CLI release can't change validation rules under us; bump deliberately.
+      CLAUDE_CODE_VERSION: 2.1.282
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate marketplace and plugins
+        run: |
+          export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/claude"
+          for target in . plugins/core plugins/pause; do
+            npx -y "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" plugin validate "$target"
+          done
+      - name: Shellcheck
+        run: shellcheck -S warning install.sh tests/install.sh
+
+  install-sh:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: install.sh tests
+        run: bash tests/install.sh
+
+  install-ps1:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Windows PowerShell 5.1 is what a fresh Windows machine has; pwsh is 7.x.
+      - name: install.ps1 tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1
+      - name: install.ps1 tests (PowerShell 7)
+        shell: pwsh
+        run: pwsh -NoProfile -File tests\install.ps1

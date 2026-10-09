@@ -1,0 +1,97 @@
+# Tests install.ps1 against throwaway profiles: a fresh machine, and one set up before
+# the core plugin existed. A stub claude.cmd on PATH records calls, so nothing real is
+# installed. Windows only (install.ps1 builds Windows paths); runs on PowerShell 5.1 and 7.
+#
+#   powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1
+#   pwsh -NoProfile -File tests\install.ps1
+
+$ErrorActionPreference = 'Stop'
+$Repo = Split-Path -Parent $PSScriptRoot
+$Work = Join-Path ([IO.Path]::GetTempPath()) ("ai-config-install-" + [guid]::NewGuid())
+$script:Pass = 0; $script:Fail = 0
+
+function Check($desc, [scriptblock]$test) {
+    $ok = $false
+    try { $ok = [bool](& $test) } catch { }
+    if ($ok) { $script:Pass++ } else { $script:Fail++; Write-Host "FAIL: $desc" }
+}
+
+# Each case gets its own copy of the repo, since migration moves files out of it.
+function New-Case($name) {
+    $d = Join-Path $Work $name
+    $case = @{
+        Repo   = Join-Path $d 'repo'
+        Home   = Join-Path $d 'home'
+        Claude = Join-Path $d 'home\.claude'
+        Bin    = Join-Path $d 'bin'
+    }
+    New-Item -ItemType Directory -Force -Path $case.Claude, $case.Bin | Out-Null
+    Copy-Item $Repo $case.Repo -Recurse
+    Remove-Item (Join-Path $case.Repo '.git') -Recurse -Force -ErrorAction SilentlyContinue
+    Set-Content -Path (Join-Path $case.Bin 'claude.cmd') -Encoding ASCII -Value "@echo %* >> `"$($case.Home)\claude-calls`""
+    return $case
+}
+
+function Invoke-Install($case) {
+    $savedProfile = $env:USERPROFILE; $savedPath = $env:PATH
+    # PowerShell 5.1 turns a child's stderr into errors; the exit code is what matters here.
+    $ErrorActionPreference = 'Continue'
+    # A UNC working directory (running from WSL) makes cmd.exe, and so the stub, refuse to run.
+    Push-Location $case.Home
+    try {
+        $env:USERPROFILE = $case.Home
+        $env:PATH = "$($case.Bin);$env:PATH"
+        $exe = (Get-Process -Id $PID).Path
+        $out = Join-Path $case.Home 'out'
+        & $exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $case.Repo 'install.ps1') *> $out
+        if ($LASTEXITCODE -ne 0) { Get-Content $out | Write-Host }
+        return $LASTEXITCODE -eq 0
+    } finally {
+        $env:USERPROFILE = $savedProfile; $env:PATH = $savedPath
+        Pop-Location
+    }
+}
+
+try {
+    # -- Fresh machine ---------------------------------------------------------
+    $c = New-Case 'fresh'
+    Check 'fresh: install succeeds' { Invoke-Install $c }
+    # Symlinks need Developer Mode or admin; CI runners have admin, and elsewhere a copy is the fallback.
+    if ($env:CI) {
+        Check 'fresh: CLAUDE.md is a symlink' { (Get-Item (Join-Path $c.Claude 'CLAUDE.md')).LinkType -eq 'SymbolicLink' }
+    } else {
+        Check 'fresh: CLAUDE.md installed' { Test-Path (Join-Path $c.Claude 'CLAUDE.md') }
+    }
+    Check 'fresh: settings copied from template' {
+        $s = Get-Content (Join-Path $c.Claude 'settings.json') -Raw | ConvertFrom-Json
+        $s.enabledPlugins.'core@ai-config' -eq $true -and $s.extraKnownMarketplaces.'ai-config'.autoUpdate -eq $true
+    }
+    Check 'fresh: plugin installed' { (Get-Content (Join-Path $c.Home 'claude-calls')) -match 'plugin install core@ai-config' }
+    Check 'fresh: project memory created' { @(Get-ChildItem (Join-Path $c.Claude 'projects\*\memory\MEMORY.md')).Count -eq 1 }
+
+    # -- Machine set up before the plugin --------------------------------------
+    $c = New-Case 'legacy'
+    $agents = Join-Path $c.Claude 'agents'
+    $memory = Join-Path $c.Claude 'agent-memory'
+    New-Item -ItemType Directory -Force -Path $agents, (Join-Path $memory 'debugger') | Out-Null
+    foreach ($n in 'debugger', 'code-reviewer', 'security-auditor', 'my-own') { Set-Content (Join-Path $agents "$n.md") 'old' }
+    Set-Content (Join-Path $memory 'debugger\MEMORY.md') '# debugger notes'
+    Set-Content (Join-Path $c.Claude 'settings.json') '{"theme": "dark"}'
+
+    Check 'legacy: install succeeds' { Invoke-Install $c }
+    Check 'legacy: old agent copy removed' { -not (Test-Path (Join-Path $agents 'debugger.md')) }
+    Check 'legacy: retired agents removed' {
+        -not (Test-Path (Join-Path $agents 'code-reviewer.md')) -and -not (Test-Path (Join-Path $agents 'security-auditor.md'))
+    }
+    Check "legacy: user's own agent kept" { Test-Path (Join-Path $agents 'my-own.md') }
+    Check 'legacy: memory moved to core-<name>' { (Get-Content (Join-Path $memory 'core-debugger\MEMORY.md')) -match 'debugger notes' }
+    Check 'legacy: existing settings left alone' { (Get-Content (Join-Path $c.Claude 'settings.json') -Raw) -match '"theme": "dark"' }
+
+    Check 'rerun: install succeeds' { Invoke-Install $c }
+    Check 'rerun: memory still in place' { Test-Path (Join-Path $memory 'core-debugger\MEMORY.md') }
+} finally {
+    Remove-Item $Work -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host "$script:Pass passed, $script:Fail failed"
+if ($script:Fail -gt 0) { exit 1 }

@@ -114,6 +114,15 @@ Nothing to re-run. `CLAUDE.md` is a symlink, and a SessionStart hook pulls the r
 
 Agents with `memory: user` keep their memory in `~/.claude/agent-memory/core-<name>/`. That directory is local to each machine and never committed, since memories hold project details.
 
+## Tests
+
+CI (`.github/workflows/repo.yml`) validates the marketplace and plugins, shellchecks the installer, and runs the installers against throwaway home folders on Linux, macOS and Windows (PowerShell 5.1 and 7). To run the installer tests locally:
+
+```bash
+bash tests/install.sh
+powershell -NoProfile -ExecutionPolicy Bypass -File tests\install.ps1   # Windows
+```
+
 ## Agents included
 
 | Agent (`core:` prefix) | Role | Model |

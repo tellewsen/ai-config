@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# install.ps1 — Windows native installer for ai-config
+# install.ps1 - Windows native installer for ai-config
 # Symlinks CLAUDE.md and installs the core plugin (agents, skills, hooks) from this
 # repo's marketplace. Also migrates machines set up before the plugin existed.
 # Symlinks need Developer Mode (Settings > For Developers) or an Administrator shell.
@@ -18,7 +18,7 @@ function Write-Warn  { param($msg) Write-Host "[warn] $msg" -ForegroundColor Yel
 
 New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
 
-# ── 1. Symlink CLAUDE.md ─────────────────────────────────────────────────────
+# -- 1. Symlink CLAUDE.md -----------------------------------------------------
 $ClaudeMdTarget = Join-Path $ClaudeDir 'CLAUDE.md'
 $ClaudeMdSrc    = Join-Path $RepoDir 'claude\CLAUDE.md'
 
@@ -26,11 +26,11 @@ $existing  = Get-Item $ClaudeMdTarget -ErrorAction SilentlyContinue
 $isSymlink = $existing -and $existing.LinkType -eq 'SymbolicLink'
 
 if ($isSymlink) {
-    Write-Ok "CLAUDE.md already symlinked — skipping"
+    Write-Ok "CLAUDE.md already symlinked - skipping"
 } else {
     if ($existing) {
         $backup = "$ClaudeMdTarget.bak.$Timestamp"
-        Write-Warn "Backing up existing CLAUDE.md → $backup"
+        Write-Warn "Backing up existing CLAUDE.md -> $backup"
         Move-Item $ClaudeMdTarget $backup
     }
     try {
@@ -39,11 +39,11 @@ if ($isSymlink) {
     } catch {
         Write-Warn "Symlink failed (need Developer Mode or Admin). Copying instead."
         Copy-Item $ClaudeMdSrc $ClaudeMdTarget
-        Write-Ok "Copied CLAUDE.md (not symlinked — edits won't auto-sync)"
+        Write-Ok "Copied CLAUDE.md (not symlinked - edits won't auto-sync)"
     }
 }
 
-# ── 2. Migrate from the pre-plugin layout ────────────────────────────────────
+# -- 2. Migrate from the pre-plugin layout ------------------------------------
 # Agents used to be copied into ~/.claude/agents. Left in place they would
 # duplicate the plugin's namespaced core:<name> versions.
 Write-Host ""
@@ -61,10 +61,10 @@ Get-ChildItem (Join-Path $RepoDir 'plugins\core\agents\*.md') | ForEach-Object {
     $newMem = Join-Path $ClaudeDir "agent-memory\core-$name"
     if (Test-Path $oldMem) {
         if (Test-Path $newMem) {
-            Write-Warn "Both agent-memory\$name and agent-memory\core-$name exist — merge by hand"
+            Write-Warn "Both agent-memory\$name and agent-memory\core-$name exist - merge by hand"
         } else {
             Move-Item $oldMem $newMem
-            Write-Ok "Moved agent memory: $name → core-$name"
+            Write-Ok "Moved agent memory: $name -> core-$name"
         }
     }
 }
@@ -78,41 +78,43 @@ foreach ($name in 'code-reviewer', 'security-auditor') {
     }
 }
 
-# ── 3. Copy settings.template.json if settings.json is absent ────────────────
+# -- 3. Copy settings.template.json if settings.json is absent ----------------
 Write-Host ""
 $SettingsTarget = Join-Path $ClaudeDir 'settings.json'
 $SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
 
 if (-not (Test-Path $SettingsTarget)) {
     Copy-Item $SettingsSrc $SettingsTarget
-    Write-Ok "Copied settings.template.json → settings.json"
+    Write-Ok "Copied settings.template.json -> settings.json"
 } else {
-    Write-Info "settings.json already exists — not overwriting"
+    Write-Info "settings.json already exists - not overwriting"
     Write-Info "  Make sure it enables core@ai-config and sets autoUpdate on the ai-config marketplace (see claude\settings.template.json)"
 }
 
-# ── 4. Install the core plugin ───────────────────────────────────────────────
+# -- 4. Install the core plugin -----------------------------------------------
 Write-Host ""
 if (Get-Command claude -ErrorAction SilentlyContinue) {
-    # PowerShell 5.1 turns redirected native stderr into errors, which Stop would make fatal.
-    try { & claude plugin marketplace add tellewsen/ai-config *> $null } catch { }
-    $installed = $false
-    try { & claude plugin install core@ai-config *> $null; $installed = ($LASTEXITCODE -eq 0) } catch { }
+    # PowerShell 5.1 turns redirected native stderr into errors, which Stop would make
+    # fatal even when claude succeeds; judge by exit code instead.
+    $ErrorActionPreference = 'Continue'
+    & claude plugin marketplace add tellewsen/ai-config *> $null
+    & claude plugin install core@ai-config *> $null
+    $installed = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = 'Stop'
     if ($installed) {
         Write-Ok "Installed plugin core@ai-config"
     } else {
-        Write-Warn "Plugin install failed — run: claude plugin install core@ai-config"
+        Write-Warn "Plugin install failed - run: claude plugin install core@ai-config"
     }
 } else {
-    Write-Warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
+    Write-Warn "claude not found - after installing Claude Code run: claude plugin install core@ai-config"
 }
 
-# ── 5. Set up project memory for this repo ───────────────────────────────────
-# Claude Code encodes paths: replace path separators with -
+# -- 5. Set up project memory for this repo -----------------------------------
+# Claude Code names the folder after the absolute path with every character that
+# isn't a letter or digit replaced by -, so C:\Users\me\ai-config is C--Users-me-ai-config
 Write-Host ""
-$EncodedPath = $RepoDir -replace '[/\\]', '-'
-# Ensure it starts with - (for absolute paths on Windows starting with drive letter)
-if (-not $EncodedPath.StartsWith('-')) { $EncodedPath = "-$EncodedPath" }
+$EncodedPath = $RepoDir -replace '[^a-zA-Z0-9]', '-'
 $MemoryDir  = Join-Path $ClaudeDir "projects\$EncodedPath\memory"
 $MemoryFile = Join-Path $MemoryDir 'MEMORY.md'
 
@@ -125,10 +127,10 @@ if (-not (Test-Path $MemoryFile)) {
     Set-Content -Path $MemoryFile -Value $content -Encoding UTF8
     Write-Ok "Created memory at $MemoryFile"
 } else {
-    Write-Info "Memory file already exists — not overwriting"
+    Write-Info "Memory file already exists - not overwriting"
 }
 
-# ── 6. Done ───────────────────────────────────────────────────────────────────
+# -- 6. Done -------------------------------------------------------------------
 Write-Host ""
 Write-Ok "Installation complete."
 Write-Host ""

@@ -162,9 +162,10 @@ else
 fi
 
 # ── 5. Set up project memory for this repo ───────────────────────────────────
-# Claude Code encodes paths as the absolute path with / replaced by -
+# Claude Code names the folder after the absolute path with every character that
+# isn't a letter or digit replaced by -
 echo ""
-ENCODED_PATH=$(echo "$REPO_DIR" | sed 's|/|-|g')
+ENCODED_PATH=$(printf '%s' "$REPO_DIR" | sed 's|[^a-zA-Z0-9]|-|g')
 MEMORY_DIR="$CLAUDE_DIR/projects/$ENCODED_PATH/memory"
 MEMORY_FILE="$MEMORY_DIR/MEMORY.md"
 
