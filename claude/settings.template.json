@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$AI_CONFIG_DIR\" ] && git -C \"$AI_CONFIG_DIR\" status --porcelain | grep -q . && echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}' || true"
+            "command": "[ -n \"$AI_CONFIG_DIR\" ] || exit 0; s=$(git -C \"$AI_CONFIG_DIR\" status --porcelain 2>/dev/null); f=\"$(git -C \"$AI_CONFIG_DIR\" rev-parse --absolute-git-dir 2>/dev/null)/sync-nag\"; [ -n \"$s\" ] && [ \"$s\" != \"$(cat \"$f\" 2>/dev/null)\" ] || exit 0; printf '%s' \"$s\" > \"$f\"; echo '{\"systemMessage\": \"ai-config has uncommitted changes — run /core:sync to save your learnings.\"}'"
           }
         ]
       }
@@ -36,18 +36,18 @@
   },
   "enabledPlugins": {
     "core@ai-config": true,
+    "pause@ai-config": true,
     "gopls-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "pause@ai-config": true
+    "superpowers@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
-    "claude-code-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/claude-code"
-      }
-    },
     "ai-config": {
       "source": {
         "source": "github",

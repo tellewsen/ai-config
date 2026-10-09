@@ -20,7 +20,7 @@ Shared by every AI coding tool (Claude Code imports it from CLAUDE.md; Copilot C
 ## Git Workflow
 
 - Always confirm before `git push`
-- Verify SSH agent is running before any git push: `ssh-add -l`
+- Before a git push to an SSH remote, verify the SSH agent is running: `ssh-add -l`
 - Stage specific files by name — not `git add -A` or `git add .` (avoids accidentally committing .env or secrets)
 - Never skip hooks (`--no-verify`) unless explicitly asked
 - Conventional commit style: `type(scope): description` with a body when the change warrants it
@@ -32,7 +32,7 @@ Shared by every AI coding tool (Claude Code imports it from CLAUDE.md; Copilot C
 
 - Feature flags must default to OFF (opt-in: disabled by default, env var enables the feature)
 - Never implement opt-out logic (enabled by default, env var disables) unless the project spec explicitly requires it
-- When adding a feature flag, confirm the gating direction before writing code: opt-in or opt-out?
+- If the spec hints at opt-out but doesn't say so explicitly, ask before writing code. Otherwise build it opt-in without asking
 
 ## Code Style
 
