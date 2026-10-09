@@ -80,7 +80,24 @@ for skill_dst in "$CLAUDE_DIR/skills/"*; do
     esac
 done
 
-# ── 3. Copy settings.template.json if settings.json is absent ────────────────
+# ── 3. Install the core plugin ───────────────────────────────────────────────
+# Before the settings step: `claude plugin` rewrites settings.json and drops keys it
+# does not manage, such as the marketplace autoUpdate flag.
+echo ""
+if command -v claude &>/dev/null && claude plugin list 2>/dev/null | grep -q 'core@ai-config'; then
+    ok "Plugin core@ai-config already installed — skipping"
+elif command -v claude &>/dev/null; then
+    claude plugin marketplace add tellewsen/ai-config >/dev/null 2>&1 || true
+    if claude plugin install core@ai-config >/dev/null 2>&1; then
+        ok "Installed plugin core@ai-config"
+    else
+        warn "Plugin install failed — run: claude plugin install core@ai-config"
+    fi
+else
+    warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
+fi
+
+# ── 4. Copy settings.template.json if settings.json is absent ────────────────
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -133,19 +150,6 @@ EOF
     fi
 else
     warn "python3 not found — enable core@ai-config and set autoUpdate on the ai-config marketplace in settings.json by hand"
-fi
-
-# ── 4. Install the core plugin ───────────────────────────────────────────────
-echo ""
-if command -v claude &>/dev/null; then
-    claude plugin marketplace add tellewsen/ai-config >/dev/null 2>&1 || true
-    if claude plugin install core@ai-config >/dev/null 2>&1; then
-        ok "Installed plugin core@ai-config"
-    else
-        warn "Plugin install failed — run: claude plugin install core@ai-config"
-    fi
-else
-    warn "claude not found — after installing Claude Code run: claude plugin install core@ai-config"
 fi
 
 # ── 5. Set up project memory for this repo ───────────────────────────────────
