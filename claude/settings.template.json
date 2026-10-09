@@ -2,6 +2,15 @@
   "env": {
     "AI_CONFIG_DIR": "(set by install.sh / install.ps1)"
   },
+  "permissions": {
+    "allow": [
+      "Bash(ssh-add -l)",
+      "Bash(claude plugin validate *)",
+      "Bash(shellcheck *)",
+      "Bash(claude plugin details *)",
+      "Bash(claude plugin list)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {

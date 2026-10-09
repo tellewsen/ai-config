@@ -94,6 +94,7 @@ cat > "$C/settings.json" <<'EOF'
   },
   "enabledPlugins": {"pause@ai-config": true},
   "extraKnownMarketplaces": {"ai-config": {"source": {"source": "github", "repo": "tellewsen/ai-config"}}},
+  "permissions": {"allow": ["Bash(make lint)"]},
   "theme": "dark"
 }
 EOF
@@ -118,6 +119,7 @@ check "legacy: Copilot CLI instructions linked to AGENTS.md" test "$(readlink "$
 check "legacy: old Copilot instructions backed up" sh -c "grep -q 'old copilot rules' '$H'/.copilot/copilot-instructions.md.bak.*"
 check "legacy: core enabled" settings_has "$C/settings.json" 's["enabledPlugins"].get("core@ai-config") is True'
 check "legacy: marketplace keeps autoUpdate" settings_has "$C/settings.json" 's["extraKnownMarketplaces"]["ai-config"].get("autoUpdate") is True'
+check "legacy: allowlist merged, own entries kept" settings_has "$C/settings.json" "s['permissions']['allow'][0] == 'Bash(make lint)' and 'Bash(ssh-add -l)' in s['permissions']['allow']"
 check "legacy: unrelated settings kept" settings_has "$C/settings.json" 's.get("theme") == "dark"'
 check "legacy: settings backup written" sh -c "ls '$C'/settings.json.bak.*"
 

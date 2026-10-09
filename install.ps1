@@ -114,8 +114,8 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 
 # -- 4. Settings --------------------------------------------------------------
 # Copied from the template on a new machine. On every run, set what this repo
-# manages: AI_CONFIG_DIR (the path skills and hooks use), the core plugin, and
-# marketplace auto-update. Hooks are left alone here; they need bash anyway.
+# manages: AI_CONFIG_DIR (the path skills and hooks use), the permissions
+# allowlist, the core plugin, and marketplace auto-update. Hooks are left alone here; they need bash anyway.
 Write-Host ""
 $SettingsTarget = Join-Path $ClaudeDir 'settings.json'
 $SettingsSrc    = Join-Path $RepoDir 'claude\settings.template.json'
@@ -139,6 +139,11 @@ $s = $raw | ConvertFrom-Json
 $before = $s | ConvertTo-Json -Depth 32 -Compress
 
 Set-Prop (Get-OrAdd $s 'env') 'AI_CONFIG_DIR' $RepoDir
+# Read-only commands from the template's allowlist; the user's own entries stay.
+$permissions = Get-OrAdd $s 'permissions'
+$allow = @(if ($permissions.PSObject.Properties['allow']) { $permissions.allow })
+$templateAllow = @((Get-Content $SettingsSrc -Raw -Encoding UTF8 | ConvertFrom-Json).permissions.allow)
+Set-Prop $permissions 'allow' @($allow + @($templateAllow | Where-Object { $allow -notcontains $_ }))
 $plugins = Get-OrAdd $s 'enabledPlugins'
 if (-not $plugins.PSObject.Properties['core@ai-config']) { Set-Prop $plugins 'core@ai-config' $true }
 $markets = Get-OrAdd $s 'extraKnownMarketplaces'

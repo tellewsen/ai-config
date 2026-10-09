@@ -83,7 +83,7 @@ try {
     Set-Content (Join-Path $memory 'debugger\MEMORY.md') '# debugger notes'
     # Written as UTF-8 without BOM, like Claude Code does, with a non-ASCII character
     # that a wrong read encoding would garble.
-    [IO.File]::WriteAllText((Join-Path $c.Claude 'settings.json'), '{"theme": "dark", "note": "caf' + [char]0xE9 + '"}', (New-Object Text.UTF8Encoding $false))
+    [IO.File]::WriteAllText((Join-Path $c.Claude 'settings.json'), '{"theme": "dark", "permissions": {"allow": ["Bash(make lint)"]}, "note": "caf' + [char]0xE9 + '"}', (New-Object Text.UTF8Encoding $false))
     $copilot = Join-Path $c.Home '.copilot'
     New-Item -ItemType Directory -Force -Path $copilot | Out-Null
     Set-Content (Join-Path $copilot 'copilot-instructions.md') 'old copilot rules'
@@ -103,6 +103,10 @@ try {
     Check 'legacy: settings enable core with autoUpdate and AI_CONFIG_DIR' {
         $s = [IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json
         $s.enabledPlugins.'core@ai-config' -eq $true -and $s.extraKnownMarketplaces.'ai-config'.autoUpdate -eq $true -and $s.env.AI_CONFIG_DIR -eq $c.Repo
+    }
+    Check 'legacy: allowlist merged, own entries kept' {
+        $allow = @(([IO.File]::ReadAllText($settingsPath) | ConvertFrom-Json).permissions.allow)
+        $allow[0] -eq 'Bash(make lint)' -and $allow -contains 'Bash(ssh-add -l)' -and $allow.Count -eq 6
     }
     Check 'legacy: settings written without BOM' { [IO.File]::ReadAllBytes($settingsPath)[0] -eq [byte][char]'{' }
     Check 'legacy: settings backup written' { @(Get-ChildItem "$settingsPath.bak.*").Count -eq 1 }

@@ -115,8 +115,8 @@ fi
 
 # ── 4. Settings ──────────────────────────────────────────────────────────────
 # The template is the source of truth for the settings this repo manages: the
-# AI_CONFIG_DIR env var, the ai-config sync hooks, the core plugin and marketplace
-# auto-update. Everything else in settings.json is left alone.
+# AI_CONFIG_DIR env var, the permissions allowlist, the ai-config sync hooks, the
+# core plugin and marketplace auto-update. Everything else in settings.json is left alone.
 echo ""
 SETTINGS_TARGET="$CLAUDE_DIR/settings.json"
 SETTINGS_SRC="$REPO_DIR/claude/settings.template.json"
@@ -156,6 +156,9 @@ if not hooks:
     del s["hooks"]
 
 s.setdefault("env", {})["AI_CONFIG_DIR"] = repo_dir
+# Read-only commands from the template's allowlist; the user's own entries stay.
+allow = s.setdefault("permissions", {}).setdefault("allow", [])
+allow.extend(r for r in template.get("permissions", {}).get("allow", []) if r not in allow)
 s.setdefault("enabledPlugins", {}).setdefault("core@ai-config", True)
 mkt = s.setdefault("extraKnownMarketplaces", {}).setdefault(
     "ai-config", {"source": {"source": "github", "repo": "tellewsen/ai-config"}})
