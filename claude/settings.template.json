@@ -51,6 +51,16 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/pause/scripts/handoff-check.sh\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },

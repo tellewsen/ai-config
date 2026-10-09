@@ -19,13 +19,16 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
 
 3. **Capture the current state.** If the working directory is a git repo, run read-only commands only (`git status --short`, `git branch --show-current`, `git log --oneline -5`, `git stash list`, `git worktree list`). Never stage, commit, or stash, and never remove or exit a worktree. If the current directory is a linked worktree, record its path and the main repo path. Stashes are shared by every worktree, so only list stashes made on this session's branch. Name each one by its message, not `stash@{N}`, because those numbers shift when any session stashes. Other sessions may share this working tree, so separate the files this session changed from other changes you see. Don't attribute other changes to this session.
 
-4. **Write the handoff note** to `<claude-dir>/handoffs/<cwd-slug>/<YYYY-MM-DD-HHMMSS>-<task-slug>.md`.
+4. **Write the handoff note** to `<claude-dir>/handoffs/<dir-name>/<YYYY-MM-DD-HHMMSS>-<task-slug>.md`.
    - `<claude-dir>` is `$CLAUDE_CONFIG_DIR` if that is set. Otherwise it is `.claude` in the user's home directory: `$HOME` on macOS/Linux/WSL, `%USERPROFILE%` on Windows. Resolve it to an absolute path before writing, because file tools don't expand `~` or environment variables.
-   - `<cwd-slug>` is the working directory path with `/`, `\`, and `:` replaced by `-`, so Windows paths like `C:\src\app` work too. And `<task-slug>` is 2–4 kebab-case words naming this session's task. Several sessions may pause in the same directory at once, so check that the path doesn't already exist, and add a suffix if it does. Never overwrite another note. Keep it short and specific, and use these sections:
+   - `<dir-name>` is the last segment of the working directory path (`api` for `/home/u/src/api` or `C:\src\api`), with any character other than letters, digits, `.`, `_` and `-` replaced by `-`. Keep it short, because full paths go over Windows' 260-character path limit. Two repos with the same name share a folder, which is fine: the `Dir:` line in each note tells them apart.
+   - `<task-slug>` is 2–4 kebab-case words naming this session's task. Several sessions may pause in the same directory at once, so check that the path doesn't already exist, and add a suffix if it does. Never overwrite another note. Keep it short and specific, and use these sections:
 
    ```markdown
    # Handoff — <one-line task summary>
-   Paused: <date time> · Dir: <cwd> · Branch: <branch or n/a>
+   Paused: <date time>
+   Dir: <cwd, exactly as given in your environment>
+   Branch: <branch or n/a>
    Worktree of: <main repo path, or omit this line if not a linked worktree>
 
    ## Goal
@@ -53,6 +56,8 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
    Files this session changed that are uncommitted, plus unpushed commits and stashes. List other uncommitted changes separately as "not from this session". Write "clean" if there is none.
    ```
 
+   Keep the `Dir:` line on its own line with the exact working directory and nothing else on it. A SessionStart hook matches on that line to offer the note when a session next starts in this directory.
+
    Leave out any section with nothing in it, except "In progress" and "Next steps". Never include secrets or credential values.
 
-5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume, tell them to `cd <cwd>` (the worktree path if there is one, because `--resume` lists sessions by directory), run `claude --resume`, pick this session, and say "read <full handoff path>". Don't suggest `--continue` or "the latest handoff". When several sessions share a directory, both can land on another session's work.
+5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume, tell them to start Claude in `<cwd>` (the worktree path if there is one), where a new session will offer the note automatically. Or they can run `claude --resume` there, pick this session to keep the full conversation, and say "read <full handoff path>". Don't suggest `--continue` or "the latest handoff". When several sessions share a directory, both can land on another session's work.
