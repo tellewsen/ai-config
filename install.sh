@@ -55,8 +55,8 @@ for agent_src in "$REPO_DIR/claude/agents/"*.md; do
 done
 
 # ── 4. Symlink agent memory directories into repo ────────────────────────────
-# Agent memories accumulate learnings over time; keeping them in the repo
-# means they sync across machines via git.
+# claude/agent-memory/ is gitignored: memories record project details that must
+# not reach this public repo, so they stay on the machine that wrote them.
 echo ""
 info "Linking agent memory directories..."
 mkdir -p "$CLAUDE_DIR/agent-memory"
@@ -100,14 +100,16 @@ for skill_src in "$REPO_DIR/claude/skills/"*/; do
 done
 
 # ── 6. Install trimout (output compressor for AI agent context windows) ──────
+# Pinned: trimout runs as a hook on every Bash call, so upgrades should be reviewed.
+TRIMOUT_VERSION=v0.2.0
 echo ""
 if command -v trimout &>/dev/null; then
     info "trimout already installed — skipping"
 elif command -v go &>/dev/null; then
-    info "Installing trimout..."
-    go install github.com/ristaloff/trimout@latest 2>/dev/null && ok "Installed trimout" || warn "trimout install failed — install manually: go install github.com/ristaloff/trimout@latest"
+    info "Installing trimout $TRIMOUT_VERSION..."
+    go install github.com/ristaloff/trimout@$TRIMOUT_VERSION 2>/dev/null && ok "Installed trimout" || warn "trimout install failed — install manually: go install github.com/ristaloff/trimout@$TRIMOUT_VERSION"
 else
-    warn "Go not found — skipping trimout install (install Go then: go install github.com/ristaloff/trimout@latest)"
+    warn "Go not found — skipping trimout install (install Go then: go install github.com/ristaloff/trimout@$TRIMOUT_VERSION)"
 fi
 
 # ── 6. Copy settings.template.json if settings.json is absent ────────────────

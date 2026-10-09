@@ -96,13 +96,7 @@ The ai-config repo (`~/projects/privat/ai-config`) is the source of truth for gl
 - **New or improved agent** → update `claude/agents/<name>.md`, then re-run `install.sh`
 - **New Copilot convention** → update `copilot/copilot-instructions.md`
 
-After updating, commit and push to keep all machines in sync:
-```bash
-cd ~/projects/privat/ai-config
-git add -A
-git commit -m "chore: update knowledge — <what changed>"
-git push
-```
+After updating, run `/sync` to commit and push so all machines stay in sync. It follows the Git Workflow rules above: files staged by name, push only after confirmation.
 
 Do this proactively when something clearly belongs in the global knowledge base. On other machines: `git pull` then re-run `install.sh`.
 

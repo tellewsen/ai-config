@@ -1,1 +1,0 @@
-# technical-writer memory

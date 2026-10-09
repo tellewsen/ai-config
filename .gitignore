@@ -1,3 +1,6 @@
 .DS_Store
 Thumbs.db
 plugins/*/evals/results/
+
+# Agent memories hold project details; keep them local, never in this public repo
+claude/agent-memory/
