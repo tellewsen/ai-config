@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: sync-pulls-first
+description: Running /core:sync when another machine has pushed, Claude pulls before pushing, stages by name, and leaves an untracked .env out.
+context:
+  scaffold_script: fixture.sh

@@ -5,6 +5,8 @@ description: Run a pre-deployment safety checklist before pushing to Vercel prod
 
 Run the full pre-deployment checklist before pushing anything to production.
 
+0. **Platform check**: this checklist is for Vercel projects — a `vercel.json`, a `.vercel/` folder, or a CLAUDE.md that names Vercel as the deploy target. If the project deploys somewhere else (Fly, Cloudflare, a container registry, a CI release job), say so and stop rather than running Vercel commands against it. Steps 1–5 still apply anywhere, so offer to run just those.
+
 1. **Commit check**: run `git status` and `git log origin/main..HEAD`. The working tree must be clean, nothing sensitive (`.env`, `*.key`, `*.pem`) may be tracked or staged, and every commit must be pushed. If not, stop — commit and push first, then re-run this checklist.
 
 2. **Secret scan**: grep the files changed since the last deploy (`git diff --name-only <last-deployed-ref>..HEAD`, or the last 20 commits if unknown) for API key, secret, token, password and service_key patterns. Report file and line only — never echo a matched value. Abort if anything real is found.
