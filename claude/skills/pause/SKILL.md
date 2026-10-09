@@ -1,9 +1,9 @@
 ---
 name: pause
-description: Bring the current session to a safe stopping point and save a handoff note so work can resume after the machine hibernates. Use when the user says they are closing the lid, stepping away, hibernating, stopping for now, or invokes /pause.
+description: Bring the current session to a safe stopping point and save a handoff note so work can resume after the machine hibernates. Use whenever the user signals they are done for now: their workday is over, they are logging off, closing the lid, stepping away, hibernating, or stopping for the day, even if they don't say "pause". Also use for /pause.
 ---
 
-The user is about to close the lid and hibernate. Hibernation preserves RAM, but network connections, SSH sessions, dev servers talking to remote services, and long-running jobs may break on resume. The goal is to stop cleanly and leave a note that makes resuming trivial, not to finish the task.
+The user is done for now, usually because they're about to close the lid and hibernate. Hibernation preserves RAM, but network connections, SSH sessions, dev servers talking to remote services, and long-running jobs may break on resume. The goal is to stop cleanly and leave a note that makes resuming trivial, not to finish the task.
 
 Do not commit, push, deploy, or start any new work. Do not shut down the machine.
 
@@ -11,13 +11,13 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
 
 2. **Stop background activity this session started.** Skip any tool below that this Claude Code version doesn't have.
    - Background Bash tasks and Monitors: stop them with TaskStop.
-   - Running subagents or workflows: stop them with TaskStop. Do not wait for them to finish.
+   - Running subagents or workflows: first send each one a short message (SendMessage) asking it to write its findings so far to a file, then stop it with TaskStop. Don't wait for it to finish the task itself, because partial results are worth keeping and the full run isn't worth the wait. Put that file's path in the note.
    - A dynamic `/loop`: end it with ScheduleWakeup `stop: true`.
    - Session crons: check CronList and delete the ones this session created.
    Only touch what this session started. Other sessions may be running in the same directory, and their processes are not yours to stop.
    Note each thing you stopped and the command needed to restart it.
 
-3. **Capture the current state.** If the working directory is a git repo, run read-only commands only (`git status --short`, `git branch --show-current`, `git log --oneline -5`, `git stash list`, `git worktree list`). Never stage, commit, or stash, and never remove or exit a worktree. If the current directory is a linked worktree, record its path and the main repo path. Stashes are shared by every worktree, so only list stashes made on this session's branch. Other sessions may share this working tree, so separate the files this session changed from other changes you see. Don't attribute other changes to this session.
+3. **Capture the current state.** If the working directory is a git repo, run read-only commands only (`git status --short`, `git branch --show-current`, `git log --oneline -5`, `git stash list`, `git worktree list`). Never stage, commit, or stash, and never remove or exit a worktree. If the current directory is a linked worktree, record its path and the main repo path. Stashes are shared by every worktree, so only list stashes made on this session's branch. Name each one by its message, not `stash@{N}`, because those numbers shift when any session stashes. Other sessions may share this working tree, so separate the files this session changed from other changes you see. Don't attribute other changes to this session.
 
 4. **Write the handoff note** to `<claude-dir>/handoffs/<cwd-slug>/<YYYY-MM-DD-HHMMSS>-<task-slug>.md`.
    - `<claude-dir>` is `$CLAUDE_CONFIG_DIR` if that is set. Otherwise it is `.claude` in the user's home directory: `$HOME` on macOS/Linux/WSL, `%USERPROFILE%` on Windows. Resolve it to an absolute path before writing, because file tools don't expand `~` or environment variables.
