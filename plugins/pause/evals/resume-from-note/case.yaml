@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: resume-from-note
+description: Starting a session in a paused directory and asking to continue picks up the note's next steps without redoing finished work or breaking stated constraints.
+context:
+  scaffold_script: fixture.sh

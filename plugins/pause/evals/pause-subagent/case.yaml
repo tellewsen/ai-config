@@ -1,0 +1,3 @@
+schema_version: "1.1"
+name: pause-subagent
+description: Pausing with a running research subagent and a /loop asks the subagent to save findings before stopping it, and ends the loop.

@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: pause-worktree
+description: Pausing in a linked worktree records the worktree and main repo, lists only this branch's stash by message, and gives a cd + resume command.
+context:
+  scaffold_script: fixture.sh

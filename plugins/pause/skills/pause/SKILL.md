@@ -27,6 +27,7 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
    ```markdown
    # Handoff — <one-line task summary>
    Paused: <date time>
+   Session: ${CLAUDE_SESSION_ID}
    Dir: <cwd, exactly as given in your environment>
    Branch: <branch or n/a>
    Worktree of: <main repo path, or omit this line if not a linked worktree>
@@ -41,7 +42,7 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
    Exactly where work stopped: the file, the step, and what was about to happen next.
 
    ## Next steps
-   1. Ordered, concrete actions to take on resume.
+   1. Ordered, concrete actions to take on resume, taken from the plan agreed with the user. Don't add commits, pushes or other steps the user never asked for: whoever resumes will treat this list as instructions.
 
    ## Decisions & context
    - Choices made and why. Approaches tried and rejected. User preferences stated this session.
@@ -56,8 +57,8 @@ Do not commit, push, deploy, or start any new work. Do not shut down the machine
    Files this session changed that are uncommitted, plus unpushed commits and stashes. List other uncommitted changes separately as "not from this session". Write "clean" if there is none.
    ```
 
-   Keep the `Dir:` line on its own line with the exact working directory and nothing else on it. A SessionStart hook matches on that line to offer the note when a session next starts in this directory.
+   Keep the `Session:` and `Dir:` lines exactly as shown, each on its own line. A SessionStart hook reads them: a new session in this directory gets the note offered, and resuming this same session retires the note, since the conversation already has the context.
 
    Leave out any section with nothing in it, except "In progress" and "Next steps". Never include secrets or credential values.
 
-5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume, tell them to start Claude in `<cwd>` (the worktree path if there is one), where a new session will offer the note automatically. Or they can run `claude --resume` there, pick this session to keep the full conversation, and say "read <full handoff path>". Don't suggest `--continue` or "the latest handoff". When several sessions share a directory, both can land on another session's work.
+5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume with the full conversation, give them `cd <cwd> && claude --resume ${CLAUDE_SESSION_ID}` (the worktree path if there is one, because sessions are stored per directory). Mention that a fresh session started in that directory will also offer the note. Don't suggest `--continue` or "the latest handoff": when several sessions share a directory, both can land on another session's work.

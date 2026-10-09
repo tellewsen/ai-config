@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: pause-mid-feature
+description: Pausing mid-feature stops the session's dev server, writes a note with session ID and exact stopping point, and changes no git state.
+context:
+  scaffold_script: api-fixture.sh
