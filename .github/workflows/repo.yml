@@ -19,7 +19,9 @@ jobs:
             npx -y "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION" plugin validate "$target"
           done
       - name: Shellcheck
-        run: shellcheck -S warning install.sh tests/install.sh
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -S warning
+      - name: Docs match plugin
+        run: bash tests/consistency.sh
 
   install-sh:
     strategy:

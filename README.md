@@ -8,7 +8,7 @@ Personal AI tooling knowledge base — global instructions shared by Claude Code
 |---|---|
 | `shared/AGENTS.md` | Global instructions for every AI tool: stack, style, git, security |
 | `claude/CLAUDE.md` | Claude Code-only additions; imports `AGENTS.md` (`@~/.claude/AGENTS.md`) |
-| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `cargo fmt` hook |
+| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync`, and a `rustfmt` hook for edited Rust files |
 | `claude/settings.template.json` | Settings template: enabled plugins, marketplace auto-update, ai-config sync hooks (copied on first install) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
 | `memory/MEMORY.template.md` | Scaffold for Claude Code project memory |
@@ -24,7 +24,7 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 
 | Plugin | What it does |
 |---|---|
-| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a `cargo fmt` hook for Rust projects. |
+| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a hook that runs `rustfmt` on each Rust file Claude edits. |
 | `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
 
 Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).
@@ -38,7 +38,7 @@ Update later with `/plugin marketplace update ai-config`, or turn on auto-update
 ## Install on Linux / WSL2
 
 ```bash
-git clone git@github.com:USERNAME/ai-config.git ~/projects/privat/ai-config
+git clone git@github.com:tellewsen/ai-config.git ~/projects/privat/ai-config
 cd ~/projects/privat/ai-config
 bash install.sh
 ```
@@ -46,7 +46,7 @@ bash install.sh
 ## Install on Windows (native PowerShell)
 
 ```powershell
-git clone git@github.com:USERNAME/ai-config.git $env:USERPROFILE\projects\privat\ai-config
+git clone git@github.com:tellewsen/ai-config.git $env:USERPROFILE\projects\privat\ai-config
 cd $env:USERPROFILE\projects\privat\ai-config
 .\install.ps1
 ```
@@ -121,7 +121,7 @@ Agents with `memory: user` keep their memory in `~/.claude/agent-memory/core-<na
 
 ## Tests
 
-CI (`.github/workflows/repo.yml`) validates the marketplace and plugins, shellchecks the installer, and runs the installers against throwaway home folders on Linux, macOS and Windows (PowerShell 5.1 and 7). To run the installer tests locally:
+CI (`.github/workflows/repo.yml`) validates the marketplace and plugins, shellchecks every script, checks that the README's agent table matches the agents' frontmatter (`tests/consistency.sh`), and runs the installers against throwaway home folders on Linux, macOS and Windows (PowerShell 5.1 and 7). To run the installer tests locally:
 
 ```bash
 bash tests/install.sh
