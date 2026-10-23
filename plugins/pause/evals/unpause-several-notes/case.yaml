@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: unpause-several-notes
+description: With notes from two parallel sessions in one directory, unpausing lists both and lets the user pick instead of merging them or starting work.
+context:
+  scaffold_script: fixture.sh

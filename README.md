@@ -24,7 +24,7 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 | Plugin | What it does |
 |---|---|
 | `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, and a hook that runs `rustfmt` on each Rust file Claude edits. With `AI_CONFIG_DIR` set, it also pulls this repo at session start and reminds you to `/core:sync` uncommitted changes. |
-| `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it. |
+| `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it; say you're back (or `/pause:unpause`) to carry on from the note. |
 
 Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).
 

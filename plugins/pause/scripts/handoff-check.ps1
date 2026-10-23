@@ -73,5 +73,5 @@ $notes | Select-Object -First 5 | ForEach-Object {
   if ($_.Sid) { Write-Output "- $($_.Path) (full conversation: claude --resume $($_.Sid))" } else { Write-Output "- $($_.Path)" }
 }
 Write-Output ''
-Write-Output "In your first reply, mention them in one line and offer to resume, either by reading the note here or by resuming the original session with the command shown. Notes from parallel sessions in the same directory can appear here, so let the user pick if there are several. When you resume from a note, read it fully, then move it into a 'resumed' subfolder next to it so it is not offered again."
+Write-Output "In your first reply, mention them in one line and offer to resume, either by reading the note here or by resuming the original session with the command shown. Notes from parallel sessions in the same directory can appear here, so let the user pick if there are several. To resume from a note, use the unpause skill; without it, read the note fully, then move it into a 'resumed' subfolder next to it so it is not offered again."
 exit 0

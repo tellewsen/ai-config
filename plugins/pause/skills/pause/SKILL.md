@@ -63,7 +63,7 @@ If this session has nothing to hand off (no task under way, no files changed, no
 
    Leave out any section with nothing in it, except "In progress" and "Next steps". Never include secrets or credential values.
 
-5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume with the full conversation, give them `cd <cwd> && claude --resume ${CLAUDE_SESSION_ID}` (the worktree path if there is one, because sessions are stored per directory). Mention that a fresh session started in that directory will also offer the note. Don't suggest `--continue` or "the latest handoff": when several sessions share a directory, both can land on another session's work.
+5. **Report** in three lines or fewer: the handoff path, any uncommitted or unpushed work the user should know about, and that it is safe to close the lid. To resume with the full conversation, give them `cd <cwd> && claude --resume ${CLAUDE_SESSION_ID}` (the worktree path if there is one, because sessions are stored per directory). Mention that a fresh session started in that directory will also offer the note, and that `/pause:unpause` picks it up. Don't suggest `--continue` or "the latest handoff": when several sessions share a directory, both can land on another session's work.
 
 ## Pausing all sessions
 

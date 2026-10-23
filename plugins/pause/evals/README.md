@@ -15,7 +15,8 @@ claude plugin eval . --scaffold --trust-plugin --allow-tools Bash Write Edit Tas
 | pause-worktree | note under the worktree name, `Worktree of:`, stash named by message, cd + resume command |
 | pause-subagent | subagent asked to save findings before being stopped, loop ended, user decision kept |
 | hook-offers-note | a new session mentions the note and offers `claude --resume <id>` |
-| resume-from-note | a fresh session follows the note's next steps to working, tested code |
+| resume-from-note | a fresh session follows the note's next steps to working, tested code, via the unpause skill, and retires the note |
+| unpause-several-notes | with two sessions' notes in one directory, lists both and asks which to resume; starts no work |
 
 Bash-granting runs refuse to start if `~/.docker` contains a symlink (e.g. WSL with Docker
 Desktop integration), because the sandbox can't exclude it. `hook-offers-note` needs no Bash
