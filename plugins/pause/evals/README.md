@@ -19,5 +19,5 @@ claude plugin eval . --scaffold --trust-plugin --allow-tools Bash Write Edit Tas
 | unpause-several-notes | with two sessions' notes in one directory, lists both and asks which to resume; starts no work |
 
 Bash-granting runs refuse to start if `~/.docker` contains a symlink (e.g. WSL with Docker
-Desktop integration), because the sandbox can't exclude it. `hook-offers-note` needs no Bash
-and runs anywhere.
+Desktop integration), because the sandbox can't exclude it. `hook-offers-note` and `unpause-several-notes` need no Bash
+and run anywhere.
