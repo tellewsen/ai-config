@@ -72,12 +72,12 @@ for IMPL in $IMPLS; do
   check "Windows-style cwd matches" "$(has 'win.md (full conversation: claude --resume dddd)')"
 
   OUT=$(run_impl "$IMPL" "$T" "{\"session_id\":\"nope\",\"cwd\":\"$P\",\"source\":\"resume\"}")
-  check "resuming an unrelated session is silent" "$([ -z "$OUT" ]; echo $?)"
-  check "  ...and retires nothing" "$([ -f "$T/handoffs/api/2026-10-09-170000-mine.md" ]; echo $?)"
+  check "resuming an unrelated session is silent" "$([ -z "$OUT" ] && echo 0 || echo 1)"
+  check "  ...and retires nothing" "$([ -f "$T/handoffs/api/2026-10-09-170000-mine.md" ] && echo 0 || echo 1)"
 
   OUT=$(run_impl "$IMPL" "$T" "{\"session_id\":\"aaaa-1111\",\"cwd\":\"$P\",\"source\":\"resume\"}")
   check "resuming the paused session says so" "$(has 'This session was paused with /pause earlier')"
-  check "  ...and retires its note" "$([ -f "$T/handoffs/api/resumed/2026-10-09-170000-mine.md" ] && [ ! -f "$T/handoffs/api/2026-10-09-170000-mine.md" ]; echo $?)"
+  check "  ...and retires its note" "$([ -f "$T/handoffs/api/resumed/2026-10-09-170000-mine.md" ] && [ ! -f "$T/handoffs/api/2026-10-09-170000-mine.md" ] && echo 0 || echo 1)"
   check "  ...without listing other sessions' notes" "$(hasnt 'other.md')"
   rm -rf "$T"
 
@@ -89,17 +89,17 @@ for IMPL in $IMPLS; do
   echo x > "$T/handoffs/gone/resumed/2026-06-01-100000-x.md"; days_ago "$T/handoffs/gone/resumed/2026-06-01-100000-x.md" 90
   for i in 1 2 3 4 5 6; do note api "2026-10-0$i-090000-n$i.md" "n$i" "$P"; done
   OUT=$(run_impl "$IMPL" "$T" "{\"session_id\":\"z\",\"cwd\":\"$P\",\"source\":\"startup\"}")
-  check "stale unresumed note retired" "$([ -f "$T/handoffs/api/resumed/2026-08-01-100000-stale.md" ]; echo $?)"
-  check "old resumed note deleted" "$([ ! -e "$T/handoffs/api/resumed/2026-07-01-100000-old.md" ]; echo $?)"
-  check "emptied folders removed" "$([ ! -e "$T/handoffs/gone" ]; echo $?)"
-  check "at most 5 notes listed" "$([ "$(printf '%s\n' "$OUT" | grep -c '^- ')" = 5 ]; echo $?)"
+  check "stale unresumed note retired" "$([ -f "$T/handoffs/api/resumed/2026-08-01-100000-stale.md" ] && echo 0 || echo 1)"
+  check "old resumed note deleted" "$([ ! -e "$T/handoffs/api/resumed/2026-07-01-100000-old.md" ] && echo 0 || echo 1)"
+  check "emptied folders removed" "$([ ! -e "$T/handoffs/gone" ] && echo 0 || echo 1)"
+  check "at most 5 notes listed" "$([ "$(printf '%s\n' "$OUT" | grep -c '^- ')" = 5 ] && echo 0 || echo 1)"
   rm -rf "$T"
 
   T=$(mktemp -d)
   OUT=$(run_impl "$IMPL" "$T/none" "{\"cwd\":\"$P\"}")
-  check "no handoffs folder: silent" "$([ -z "$OUT" ]; echo $?)"
+  check "no handoffs folder: silent" "$([ -z "$OUT" ] && echo 0 || echo 1)"
   OUT=$(run_impl "$IMPL" "$T" "{\"cwd\":\"$P\"}")
-  check "empty handoffs folder: silent" "$([ -z "$OUT" ]; echo $?)"
+  check "empty handoffs folder: silent" "$([ -z "$OUT" ] && echo 0 || echo 1)"
   rm -rf "$T"
   echo "[$IMPL] done"
 done
