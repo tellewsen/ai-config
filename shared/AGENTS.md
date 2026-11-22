@@ -4,7 +4,8 @@ Shared by every AI coding tool (Claude Code imports it from CLAUDE.md; Copilot C
 
 ## Identity & Stack
 
-- Developer working primarily in JavaScript (primary), TypeScript, CSS, Go, Kotlin, Rust
+- Expert in Python; also works in JavaScript/TypeScript with React and Svelte, and CSS
+- Basics only in Go, Kotlin, Rust and C++: advanced code in those is AI-written, so explain it without assuming fluency, and never present these languages as expertise in public-facing text
 - Primary environments: WSL2 (Linux) and Windows native
 - Package managers: npm (JS), go modules, cargo, gradle (Kotlin)
 - Hosting: Vercel free tier, GitHub Actions for CI
