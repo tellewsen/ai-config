@@ -8,7 +8,7 @@ Personal AI tooling knowledge base — global instructions shared by Claude Code
 |---|---|
 | `shared/AGENTS.md` | Global instructions for every AI tool: stack, style, git, security |
 | `claude/CLAUDE.md` | Claude Code-only additions; imports `AGENTS.md` (`@~/.claude/AGENTS.md`) |
-| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync` `/core:todo`, the ai-config sync hooks, and a `rustfmt` hook for edited Rust files |
+| `plugins/core/` | The everyday setup as a plugin: 8 agents, `/core:ship` `/core:deploy` `/core:sync` `/core:todo` `/core:task`, the ai-config sync hooks, and a `rustfmt` hook for edited Rust files |
 | `claude/settings.template.json` | Settings template: enabled plugins, permissions allowlist, marketplace auto-update (copied on first install; on existing machines the installer lists template plugins that aren't enabled) |
 | `plugins/` + `.claude-plugin/marketplace.json` | Shareable Claude Code plugins (see Plugins) |
 
@@ -23,7 +23,7 @@ This repo is also a Claude Code plugin marketplace. Anyone can install its plugi
 
 | Plugin | What it does |
 |---|---|
-| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, `/core:todo` (a repo-independent todo list kept in your second brain's `todo.md`), and a hook that runs `rustfmt` on each Rust file Claude edits. With `AI_CONFIG_DIR` set, it also pulls this repo at session start and reminds you to `/core:sync` uncommitted changes. |
+| `core` | Specialist agents (`core:debugger`, `core:db-admin`, …), `/core:ship`, `/core:deploy`, `/core:sync`, `/core:todo` (a repo-independent todo list kept in your second brain's `todo.md`), `/core:task` (turns a task into a GitHub issue on your agent board), and a hook that runs `rustfmt` on each Rust file Claude edits. With `AI_CONFIG_DIR` set, it also pulls this repo at session start and reminds you to `/core:sync` uncommitted changes. |
 | `pause` | Say you're done for the day (or "closing the lid") and Claude stops background work and saves a handoff note. The next session in that folder offers to pick up from it; say you're back (or `/pause:unpause`) to carry on from the note. |
 
 Update later with `/plugin marketplace update ai-config`, or turn on auto-update for the marketplace in `/plugin` (the installer does this for you).

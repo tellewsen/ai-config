@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "description": "Andreas Ellewsen's everyday Claude Code setup: specialist agents (backend, frontend, database, debugging, devops, dependencies, docs, tests), ship/deploy/sync/todo skills, and a rustfmt hook.",
+  "description": "Andreas Ellewsen's everyday Claude Code setup: specialist agents (backend, frontend, database, debugging, devops, dependencies, docs, tests), ship/deploy/sync/todo/task skills, and a rustfmt hook.",
   "author": {
     "name": "Andreas Ellewsen"
   }
