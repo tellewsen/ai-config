@@ -8,6 +8,7 @@ Shared by every AI coding tool (Claude Code imports it from CLAUDE.md; Copilot C
 - Basics only in Go, Kotlin, Rust and C++: advanced code in those is AI-written, so explain it without assuming fluency, and never present these languages as expertise in public-facing text
 - Primary environments: WSL2 (Linux) and Windows native
 - Package managers: npm (JS), go modules, cargo, gradle (Kotlin)
+- Runtime versions (Node, Python, …): get them through mise or uvx, never by adding an apt repo such as NodeSource
 - Hosting: Vercel free tier, GitHub Actions for CI
 
 ## Communication Style
