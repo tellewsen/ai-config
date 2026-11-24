@@ -38,7 +38,7 @@ Show the title and body and ask before creating anything; an issue is outward-fa
 2. `gh project item-add <number> --owner <owner> --url <issue url> --format json`; keep the item id.
 3. Set Status to *Backlog*: get the project id with `gh project view <number> --owner <owner> --format json`, and the Status field id and its option ids from `gh project field-list <number> --owner <owner> --format json`. Then `gh project item-edit --id <item id> --project-id <project id> --field-id <status field id> --single-select-option-id <Backlog option id>`.
    Status options, in order: Backlog, Ready, In progress, In review, Needs you, Done. If one is missing, stop and report it.
-4. Ask whether to move it to *Ready* (the "go" signal; the agent picks the top Ready card on its next hourly run, and Ready also draws on the user's Claude usage). If yes, repeat `item-edit` with the *Ready* option id.
+4. Ask whether to move it to *Ready* (the "go" signal; the agent picks the top Ready card on its next run (every 5 minutes), and Ready also draws on the user's Claude usage). If yes, repeat `item-edit` with the *Ready* option id.
 
 If a `gh` call fails with a scope error, tell the user to run `gh auth refresh -s project`.
 
